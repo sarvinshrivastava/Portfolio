@@ -18,6 +18,9 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
 
+      - name: Debug commit message
+        run: git log -1 --pretty=%B
+
       - name: Check commit message
         id: check_commit_message
         run: |
