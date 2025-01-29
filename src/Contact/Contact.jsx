@@ -3,8 +3,6 @@ import emailjs from "@emailjs/browser";
 import { Link, useNavigate } from "react-router-dom";
 
 function Contact() {
-  const path = "/src/assets/logo/";
-
   const form = useRef();
   const navigate = useNavigate();
 
@@ -30,48 +28,48 @@ function Contact() {
   return (
     <div className="flex flex-row h-screen items-center">
       {/* side navigation bar */}
-      {/* <div className="bg-neutral-800 h-full w-[60px] flex items-center">
+      <div className="bg-neutral-800 h-full w-[60px] flex items-center">
         <div className="flex flex-col w-fit mx-auto space-y-12 justify-center">
           <img
-            src={`${path}menu-burger.png`}
+            src="./menu-burger.png"
             className="w-7 mb-15 hover:scale-125 duration-300"
           />
           <Link to="/">
             <img
-              src={`${path}home.png`}
+              src="./home.png"
               className="w-7 hover:scale-125 duration-300"
             />
           </Link>
           <Link to="/about">
             <img
-              src={`${path}user.png`}
+              src="./user.png"
               className="w-7 hover:scale-125 duration-300"
             />
           </Link>
-          <Link to="/achievements">
+          {/* <Link to="/achievements">
             <img
-              src={`${path}trophy.png`}
+              src="./trophy.png"
               className="w-7 hover:scale-125 duration-300"
             />
           </Link>
           <Link to="/projects">
             <img
-              src={`${path}computer.png`}
+              src="./computer.png"
               className="w-7 hover:scale-125 duration-300"
             />
           </Link>
           <Link to="/contact">
             <img
-              src={`${path}edit.png`}
+              src="./edit.png"
               className="w-7 hover:scale-125 duration-300"
             />
-          </Link>
+          </Link> */}
           <img
-            src={`${path}night-day.png`}
+            src="./night-day.png"
             className="w-7 mt-15 hover:scale-125 duration-300"
           />
         </div>
-      </div> */}
+      </div>
       {/* contact page content */}
       <div className="flex flex-row mx-auto">
         <div className=" flex flex-col mx-auto">
