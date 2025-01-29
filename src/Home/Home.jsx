@@ -56,13 +56,13 @@ function Home() {
       {/* home page content */}
       <div className="justify-center items-center flex flex-col mx-auto">
         <img
-          src="/src/assets/avatar/My Avatar.jpeg"
+          src="./src/assets/avatar/My Avatar.jpeg"
           className="rounded-full w-44"
         />
         <h1 className="text-3xl font-bold my-8.5">
           Hi! I am{" "}
           <a
-            href="/src/assets/resume/Sarvin Shrivastava.pdf"
+            href="./src/assets/resume/Sarvin Shrivastava.pdf"
             target="_blank"
             className="name-underline"
           >
@@ -76,13 +76,13 @@ function Home() {
         </div>
         <div className="flex flex-row w-full mx-auto space-x-7 justify-center mt-7">
           <a href="https://github.com/sarvinshrivastava" target="_blank">
-            <img src="/src/assets/logo/github.png" className="w-8" />
+            <img src="./src/assets/logo/github.png" className="w-8" />
           </a>
           <a
             href="https://www.linkedin.com/in/sarvin-shrivastava-493b20176/"
             target="_blank"
           >
-            <img src="/src/assets/logo/linkedin.png" className="w-8" />
+            <img src="./src/assets/logo/linkedin.png" className="w-8" />
           </a>
           <img
             src="/src/assets/logo/call.png"
