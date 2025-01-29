@@ -6,53 +6,53 @@ function Home() {
   return (
     <div className="flex flex-row h-screen items-center">
       {/* side navigation bar */}
-      {/* <div className="bg-neutral-800 h-full w-[60px] flex items-center">
+      <div className="bg-neutral-800 h-full w-[60px] flex items-center">
         <div className="flex flex-col w-fit mx-auto space-y-12 justify-center">
           <img
-            src="/src/assets/logo/menu-burger.png"
+            src="./menu-burger.png"
             className="w-7 mb-15 hover:scale-125 duration-300"
           />
           <Link to="/">
             <img
-              src="/src/assets/logo/home.png"
+              src="./home.png"
               className="w-7 hover:scale-125 duration-300"
               title="home"
             />
           </Link>
           <Link to="/about">
             <img
-              src="/src/assets/logo/user.png"
+              src="./user.png"
               className="w-7 hover:scale-125 duration-300"
               title="about"
             />
           </Link>
-          <Link to="/achievements">
+          {/* <Link to="/achievements">
             <img
-              src="/src/assets/logo/trophy.png"
+              src="./trophy.png"
               className="w-7 hover:scale-125 duration-300"
               title="achievements"
             />
           </Link>
           <Link to="/projects">
             <img
-              src="/src/assets/logo/computer.png"
+              src="./computer.png"
               className="w-7 hover:scale-125 duration-300"
               title="projects"
             />
           </Link>
           <Link to="/contact">
             <img
-              src="/src/assets/logo/edit.png"
+              src="./edit.png"
               className="w-7 hover:scale-125 duration-300"
               title="contact"
             />
-          </Link>
+          </Link> */}
           <img
-            src="/src/assets/logo/night-day.png"
+            src="./night-day.png"
             className="w-7 mt-15 hover:scale-125 duration-300"
           />
         </div>
-      </div> */}
+      </div>
       {/* home page content */}
       <div className="justify-center items-center flex flex-col mx-auto">
         <img src="./My Avatar.jpeg" className="rounded-full w-44" />
