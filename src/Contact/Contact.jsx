@@ -123,7 +123,7 @@ function Contact() {
             ></textarea>
             <button
               type="submit"
-              className="bg-cyan-500 text-white w-full mx-auto my-2 py-1.5 px-4 rounded-lg hover:bg-cyan-600 duration-300"
+              className="bg-cyan-400 text-white w-full mx-auto my-2 py-1.5 px-4 rounded-lg hover:bg-cyan-600 duration-300"
             >
               Send
             </button>
