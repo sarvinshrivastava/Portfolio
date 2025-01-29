@@ -30,7 +30,7 @@ function Contact() {
   return (
     <div className="flex flex-row h-screen items-center">
       {/* side navigation bar */}
-      <div className="bg-neutral-800 h-full w-[60px] flex items-center">
+      {/* <div className="bg-neutral-800 h-full w-[60px] flex items-center">
         <div className="flex flex-col w-fit mx-auto space-y-12 justify-center">
           <img
             src={`${path}menu-burger.png`}
@@ -71,7 +71,7 @@ function Contact() {
             className="w-7 mt-15 hover:scale-125 duration-300"
           />
         </div>
-      </div>
+      </div> */}
       {/* contact page content */}
       <div className="justify-center items-center flex flex-col mx-auto">
         <h3 className="text-white text-2xl my-2.5">Get in Touch</h3>
