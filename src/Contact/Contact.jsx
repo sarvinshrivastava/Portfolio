@@ -73,36 +73,63 @@ function Contact() {
         </div>
       </div> */}
       {/* contact page content */}
-      <div className="justify-center items-center flex flex-col mx-auto">
-        <h3 className="text-white text-2xl my-2.5">Get in Touch</h3>
-        <form className="flex flex-col" onSubmit={sendEmail} ref={form}>
-          <input
-            type="text"
-            placeholder="Name"
-            className="border-2 border-neutral-500 rounded-lg p-2 m-2"
-            name="name"
-            required
-          />
-          <input
-            type="email"
-            placeholder="Email"
-            className="border-2 border-neutral-500 rounded-lg p-2 m-2"
-            name="email"
-            required
-          />
-          <textarea
-            placeholder="Message"
-            className="border-2 border-neutral-500 rounded-lg p-2 m-2"
-            name="message"
-            required
-          ></textarea>
-          <button
-            type="submit"
-            className="bg-cyan-400 text-white w-fit mx-auto my-2 py-1.5 px-4 rounded-lg hover:bg-cyan-500 hover:scale-115 duration-300"
-          >
-            Send
-          </button>
-        </form>
+      <div className="flex flex-row mx-auto">
+        <div className=" flex flex-col mx-auto">
+          <h3 className="text-white text-3xl text-left w-full font-semibold mb-0.5">
+            Get in Touch
+          </h3>
+          <p className="text-neutral-300 text-base text-left w-full mb-7">
+            Let&apos;s discuss how my expertise can be of assistance to you.
+          </p>
+          <form className="flex flex-col" onSubmit={sendEmail} ref={form}>
+            <div className="flex flex-row">
+              <div className="flex flex-col">
+                <label htmlFor="fname">Name</label>
+                <input
+                  type="text"
+                  placeholder="First Name"
+                  className="border-2 border-neutral-500 rounded-md p-2 my-2 w-44"
+                  name="fname"
+                  required
+                />
+              </div>
+              <div className="ml-9 flex flex-col">
+                <label htmlFor="lname">Last Name</label>
+                <input
+                  type="text"
+                  placeholder="Last Name"
+                  className="border-2 border-neutral-500 rounded-md p-2 my-2 w-full"
+                  name="lname"
+                  required
+                />
+              </div>
+            </div>
+            <div className="flex flex-col">
+              <label htmlFor="email">Email</label>
+              <input
+                type="email"
+                placeholder="Email"
+                className="border-2 border-neutral-500 w-full rounded-md p-2 my-2"
+                name="email"
+                required
+              />
+            </div>
+            <label htmlFor="message">Message</label>
+            <textarea
+              placeholder="Message"
+              className="border-2 border-neutral-500 w-full rounded-lg p-2 my-2"
+              name="message"
+              required
+            ></textarea>
+            <button
+              type="submit"
+              className="bg-cyan-400 text-white w-full mx-auto my-2 py-1.5 px-4 rounded-lg hover:bg-cyan-500 duration-300"
+            >
+              Send
+            </button>
+          </form>
+        </div>
+        <img src="./Handshake Image.png" className="mx-10" />
       </div>
     </div>
   );
