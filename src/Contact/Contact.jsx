@@ -46,6 +46,15 @@ function Contact() {
       : baseName;
   };
 
+  // icon swap on click
+  const [clickedIcon, setClickedIcon] = useState(null);
+  const handleIconClick = (iconName) => {
+    setClickedIcon(iconName);
+  };
+  const getName = (baseName) => {
+    return clickedIcon === baseName ? "chevron-back" : baseName;
+  };
+
   // dynamin positioning of elements
   const pos_ham = Math.round((window.innerHeight * 112) / 864);
   const pos_route = Math.round((window.innerHeight * 224) / 864);
@@ -54,10 +63,11 @@ function Contact() {
   return (
     <div className="flex flex-row h-screen">
       {/* side navigation bar */}
+      {/* md+ */}
       <div
-        className={`bg-neutral-800 ${
-          isExpanded ? "w-48" : "w-18"
-        } flex flex-col duration-300 transition-width relative`}
+        className={`bg-neutral-800 hidden md:block absolute top-0 left-0 h-full ${
+          isExpanded ? "w-48 left-0" : "w-18 -left-48"
+        } flex flex-col duration-300 transition-all z-50`}
       >
         <div
           className="w-fit hover:scale-125 duration-300 cursor-pointer left-4.5 relative"
@@ -157,9 +167,89 @@ function Contact() {
           style={{ bottom: `${pos_ham}px` }}
         /> */}
       </div>
+      {/* sm */}
+      <div
+        className={`bg-neutral-800 md:hidden absolute top-0 left-0 h-full ${
+          isExpanded ? "w-1/2" : "w-0"
+        } flex flex-col duration-300 z-40`}
+      >
+        <div
+          className="w-fit hover:scale-125 duration-300 cursor-pointer left-4.5 relative"
+          style={{ top: `${pos_ham}px` }}
+          onClick={() => {
+            toggleSidebar();
+            handleIconClick(
+              clickedIcon === "chevron-forward"
+                ? "chevron-back"
+                : "chevron-forward"
+            );
+          }}
+        >
+          <ion-icon name={getName("chevron-forward")} size="large" />
+        </div>
+        <div
+          style={{ top: `${pos_route}px`, height: `${spacing_route}px` }}
+          className={`flex flex-col left-4.5 relative justify-between`}
+        >
+          <Link
+            to="/"
+            className={`flex items-center transition-opacity duration-300 ${
+              isExpanded ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            <ion-icon name="home" size="large" />
+            <span className="absolute left-10 text-white text-sm">Home</span>
+          </Link>
+          <Link
+            to="/about"
+            className={`flex items-center transition-opacity duration-300 ${
+              isExpanded ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            <ion-icon name="person" size="large" />
+            <span className="absolute left-10 text-white text-sm">About</span>
+          </Link>
+          <Link
+            to="/achievements"
+            className={`flex items-center transition-opacity duration-300 ${
+              isExpanded ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            <ion-icon name="trophy" size="large" />
+            <span className="absolute left-10 text-white text-sm">
+              Achievements
+            </span>
+          </Link>
+          <Link
+            to="/projects"
+            className={`flex items-center transition-opacity duration-300 ${
+              isExpanded ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            <ion-icon name="folder" size="large" />
+            <span className="absolute left-10 text-white text-sm">
+              Projects
+            </span>
+          </Link>
+          <Link
+            to="/contact"
+            className={`flex items-center transition-opacity duration-300 ${
+              isExpanded ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            <ion-icon name="chatbubble" size="large" />
+            <span className="absolute left-10 text-white text-sm">Contact</span>
+          </Link>
+        </div>
+        {/* <img
+          src="./night-day.png"
+          className="w-7 mt-15 hover:scale-125 duration-300 absolute left-5 bottom-24"
+          style={{ bottom: `${pos_ham}px` }}
+        /> */}
+      </div>
       {/* contact page content */}
       <div className="justify-center items-center flex flex-col-reverse lg:flex-row w-full mx-auto">
-        <div className="flex flex-col">
+        <div className="flex flex-col w-9/12 md:w-fit">
           <h3 className="text-white text-xl md:text-3xl text-left font-semibold mb-0.5">
             Get in Touch
           </h3>
@@ -168,12 +258,12 @@ function Contact() {
           </p>
           <form className="flex flex-col" onSubmit={sendEmail} ref={form}>
             <div className="flex flex-row">
-              <div className="flex flex-col">
+              <div className="flex flex-col md:flex-col">
                 <label htmlFor="fname">Name</label>
                 <input
                   type="text"
                   placeholder="First Name"
-                  className="border-2 border-neutral-500 rounded-md p-2 my-2 w-44"
+                  className="border-2 border-neutral-500 rounded-md p-2 my-2 w-full md:w-44"
                   id="fname"
                   required
                 />
@@ -217,7 +307,7 @@ function Contact() {
         <div className="w-full lg:w-fit">
           <img
             src="./Handshake Image.png"
-            className=" mx-auto size-[12rem] mb-5 lg:mb-0 lg:ml-10.5 lg:size-[20rem]"
+            className=" mx-auto size-[10rem] mb-5 md:size-[18rem] lg:mb-0 lg:ml-10.5 lg:size-[20rem]"
           />
         </div>
       </div>

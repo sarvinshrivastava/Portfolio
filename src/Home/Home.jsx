@@ -43,9 +43,9 @@ function Home() {
       {/* side navigation bar */}
       {/* md+ */}
       <div
-        className={`bg-neutral-800 hidden md:block ${
-          isExpanded ? "w-48" : "w-18"
-        } flex flex-col duration-300 transition-width relative`}
+        className={`bg-neutral-800 hidden md:block absolute top-0 left-0 h-full ${
+          isExpanded ? "w-48 left-0" : "w-18 -left-48"
+        } flex flex-col duration-300 transition-all z-50`}
       >
         <div
           className="w-fit hover:scale-125 duration-300 cursor-pointer left-4.5 relative"
@@ -147,9 +147,9 @@ function Home() {
       </div>
       {/* sm */}
       <div
-        className={`bg-neutral-800 md:hidden ${
-          isExpanded ? "w-70" : "w-0"
-        } flex flex-col duration-300 transition-width relative z-40`}
+        className={`bg-neutral-800 md:hidden absolute top-0 left-0 h-full ${
+          isExpanded ? "w-1/2" : "w-0"
+        } flex flex-col duration-300 z-40`}
       >
         <div
           className="w-fit hover:scale-125 duration-300 cursor-pointer left-4.5 relative"
