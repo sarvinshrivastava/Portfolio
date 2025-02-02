@@ -1,8 +1,9 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import emailjs from "@emailjs/browser";
 import { Link, useNavigate } from "react-router-dom";
 
 function Contact() {
+  // emailjs form submission
   const form = useRef();
   const navigate = useNavigate();
 
@@ -25,58 +26,144 @@ function Contact() {
       );
   };
 
+  // nav bar expansion and collapse
+  const [isExpanded, setIsExpanded] = useState(false);
+  const toggleSidebar = () => {
+    setIsExpanded(!isExpanded);
+  };
+
+  // icon fill on hover
+  const [hoveredIcon, setIsHovered] = useState(false);
+  const handleMouseEnter = (iconName) => {
+    setIsHovered(iconName);
+  };
+  const handleMouseLeave = () => {
+    setIsHovered(null);
+  };
+  const getIconName = (baseName) => {
+    return hoveredIcon === baseName
+      ? baseName.replace("-outline", "")
+      : baseName;
+  };
+
+  // dynamin positioning of elements
+  const pos_ham = Math.round((window.innerHeight * 112) / 864);
+  const pos_route = Math.round((window.innerHeight * 224) / 864);
+  const spacing_route = Math.round((window.innerHeight * 425) / 864);
+
   return (
-    <div className="flex flex-row h-screen items-center">
+    <div className="flex flex-row h-screen">
       {/* side navigation bar */}
-      <div className="bg-neutral-800 h-full w-[60px] flex items-center">
-        <div className="flex flex-col w-fit mx-auto space-y-12 justify-center">
-          <img
-            src="./menu-burger.png"
-            className="w-7 mb-15 hover:scale-125 duration-300"
-          />
-          <Link to="/">
-            <img
-              src="./home.png"
-              className="w-7 hover:scale-125 duration-300"
-            />
-          </Link>
-          <Link to="/about">
-            <img
-              src="./user.png"
-              className="w-7 hover:scale-125 duration-300"
-            />
-          </Link>
-          {/* <Link to="/achievements">
-            <img
-              src="./trophy.png"
-              className="w-7 hover:scale-125 duration-300"
-            />
-          </Link>
-          <Link to="/projects">
-            <img
-              src="./computer.png"
-              className="w-7 hover:scale-125 duration-300"
-            />
-          </Link>
-          <Link to="/contact">
-            <img
-              src="./edit.png"
-              className="w-7 hover:scale-125 duration-300"
-            />
-          </Link> */}
-          <img
-            src="./night-day.png"
-            className="w-7 mt-15 hover:scale-125 duration-300"
-          />
+      <div
+        className={`bg-neutral-800 ${
+          isExpanded ? "w-48" : "w-18"
+        } flex flex-col duration-300 transition-width relative`}
+      >
+        <div
+          className="w-fit hover:scale-125 duration-300 cursor-pointer left-4.5 relative"
+          style={{ top: `${pos_ham}px` }}
+          onClick={toggleSidebar}
+        >
+          <ion-icon name="menu" size="large" />
         </div>
+        <div
+          style={{ top: `${pos_route}px`, height: `${spacing_route}px` }}
+          className={`flex flex-col left-4.5 relative justify-between`}
+        >
+          <Link to="/" className="flex items-center relative">
+            <div
+              className="w-fit hover:scale-125 duration-300"
+              onMouseEnter={() => handleMouseEnter("home-outline")}
+              onMouseLeave={handleMouseLeave}
+            >
+              <ion-icon name={getIconName("home-outline")} size="large" />
+            </div>
+            <span
+              className={`absolute left-10 text-white transition-opacity duration-300 text-lg ${
+                isExpanded ? "opacity-100" : "opacity-0"
+              }`}
+            >
+              Home
+            </span>
+          </Link>
+          <Link to="/about" className="flex items-center relative">
+            <div
+              className="w-fit hover:scale-125 duration-300"
+              onMouseEnter={() => handleMouseEnter("person-outline")}
+              onMouseLeave={handleMouseLeave}
+            >
+              <ion-icon name={getIconName("person-outline")} size="large" />
+            </div>
+            <span
+              className={`absolute left-10 text-white transition-opacity duration-300 text-lg ${
+                isExpanded ? "opacity-100" : "opacity-0"
+              }`}
+            >
+              About
+            </span>
+          </Link>
+          <Link to="/achievements" className="flex items-center relative">
+            <div
+              className="w-fit hover:scale-125 duration-300"
+              onMouseEnter={() => handleMouseEnter("trophy-outline")}
+              onMouseLeave={handleMouseLeave}
+            >
+              <ion-icon name={getIconName("trophy-outline")} size="large" />
+            </div>
+            <span
+              className={`absolute left-10 text-white transition-opacity duration-300 text-lg ${
+                isExpanded ? "opacity-100" : "opacity-0"
+              }`}
+            >
+              Achievements
+            </span>
+          </Link>
+          <Link to="/projects" className="flex items-center relative">
+            <div
+              className="w-fit hover:scale-125 duration-300"
+              onMouseEnter={() => handleMouseEnter("folder-outline")}
+              onMouseLeave={handleMouseLeave}
+            >
+              <ion-icon name={getIconName("folder-outline")} size="large" />
+            </div>
+            <span
+              className={`absolute left-10 text-white transition-opacity duration-300 text-lg ${
+                isExpanded ? "opacity-100" : "opacity-0"
+              }`}
+            >
+              Projects
+            </span>
+          </Link>
+          <Link to="/contact" className="flex items-center relative">
+            <div
+              className="w-7 hover:scale-125 duration-300"
+              onMouseEnter={() => handleMouseEnter("chatbubble-outline")}
+              onMouseLeave={handleMouseLeave}
+            >
+              <ion-icon name={getIconName("chatbubble-outline")} size="large" />
+            </div>
+            <span
+              className={`absolute left-10 text-white transition-opacity duration-300 text-lg ${
+                isExpanded ? "opacity-100" : "opacity-0"
+              }`}
+            >
+              Contact
+            </span>
+          </Link>
+        </div>
+        {/* <img
+          src="./night-day.png"
+          className="w-7 mt-15 hover:scale-125 duration-300 absolute left-5 bottom-24"
+          style={{ bottom: `${pos_ham}px` }}
+        /> */}
       </div>
       {/* contact page content */}
-      <div className="flex flex-row mx-auto">
-        <div className=" flex flex-col mx-auto">
-          <h3 className="text-white text-3xl text-left w-full font-semibold mb-0.5">
+      <div className="justify-center items-center flex flex-col-reverse lg:flex-row w-full mx-auto">
+        <div className="flex flex-col">
+          <h3 className="text-white text-xl md:text-3xl text-left font-semibold mb-0.5">
             Get in Touch
           </h3>
-          <p className="text-neutral-300 text-base text-left w-full mb-7">
+          <p className="text-neutral-300 text-sm text-left w-full mb-3 md:mb-4.5">
             Let&apos;s discuss how my expertise can be of assistance to you.
           </p>
           <form className="flex flex-col" onSubmit={sendEmail} ref={form}>
@@ -87,7 +174,7 @@ function Contact() {
                   type="text"
                   placeholder="First Name"
                   className="border-2 border-neutral-500 rounded-md p-2 my-2 w-44"
-                  name="fname"
+                  id="fname"
                   required
                 />
               </div>
@@ -97,7 +184,7 @@ function Contact() {
                   type="text"
                   placeholder="Last Name"
                   className="border-2 border-neutral-500 rounded-md p-2 my-2 w-full"
-                  name="lname"
+                  id="lname"
                   required
                 />
               </div>
@@ -108,7 +195,7 @@ function Contact() {
                 type="email"
                 placeholder="Email"
                 className="border-2 border-neutral-500 w-full rounded-md p-2 my-2"
-                name="email"
+                id="email"
                 required
               />
             </div>
@@ -116,7 +203,7 @@ function Contact() {
             <textarea
               placeholder="Message"
               className="border-2 border-neutral-500 w-full rounded-lg p-2 my-2"
-              name="message"
+              id="message"
               required
             ></textarea>
             <button
@@ -127,7 +214,12 @@ function Contact() {
             </button>
           </form>
         </div>
-        <img src="./Handshake Image.png" className="mx-10" />
+        <div className="w-full lg:w-fit">
+          <img
+            src="./Handshake Image.png"
+            className=" mx-auto size-[12rem] mb-5 lg:mb-0 lg:ml-10.5 lg:size-[20rem]"
+          />
+        </div>
       </div>
     </div>
   );
