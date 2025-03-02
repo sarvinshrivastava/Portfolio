@@ -133,9 +133,20 @@ function Projects() {
         </div>
       </div>
       {/* projects page content */}
-      <div className="justify-center items-center flex flex-col mx-auto">
-        <h1 className="text-white text-4xl font-bold my-2">Projects</h1>
-        <h2 className="text-neutral-300 text-xl my-2">Adding Soon...</h2>
+      <div className="justify-evenly items-center mx-auto flex flex-row w-10/12">
+        <Link
+          to="/projects/blender"
+          key="Blender"
+          className="bg-neutral-800 w-60 h-130 flex items-center rounded-3xl justify-center drop-shadow-[0_0_7px_rgba(255,255,255,0.7)] hover:drop-shadow-[0_0_12px_rgba(255,255,255,0.7)] transition-all duration-300"
+        >
+          <img src="./blender.png" className="size-20" />
+        </Link>
+        <div className="bg-neutral-800 w-60 h-130 flex items-center rounded-3xl justify-center drop-shadow-[0_0_7px_rgba(255,255,255,0.7)] hover:drop-shadow-[0_0_12px_rgba(255,255,255,0.7)] transition-all duration-300">
+          <img src="./unity.png" className="size-20" />
+        </div>
+        <div className="bg-neutral-800 w-60 h-130 flex items-center rounded-3xl justify-center drop-shadow-[0_0_7px_rgba(255,255,255,0.7)] hover:drop-shadow-[0_0_12px_rgba(255,255,255,0.7)] transition-all duration-300">
+          <img src="./py.png" className="size-20" />
+        </div>
       </div>
     </div>
   );

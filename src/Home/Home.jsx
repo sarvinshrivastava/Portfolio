@@ -180,6 +180,12 @@ function Home() {
           >
             <ion-icon name="mail-outline" size="large" />
           </a>
+          <a
+            href="https://codolio.com/profile/arctic_player/card"
+            target="_blank"
+          >
+            <ion-icon name="bar-chart" size="large"></ion-icon>
+          </a>
         </div>
       </div>
     </div>

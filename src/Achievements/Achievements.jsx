@@ -134,16 +134,8 @@ function Achievements() {
       </div>
       {/* achievements page content */}
       <div className="justify-center items-center flex flex-col mx-auto w-full">
-        {/* <h1 className="text-white text-4xl font-bold my-2">Achievements</h1>
-        <h2 className="text-neutral-300 text-xl my-2">Adding Soon...</h2> */}
-        {/* years */}
-        <div className="flex flex-col items-start w-10/12 ml-18 py-5 h-screen">
-          <div className="text-xl">2026</div>
-          <div className="text-xl">2025</div>
-          <div className="text-xl">2024</div>
-          <div className="text-xl">2023</div>
-          <div className="text-xl">2022</div>
-        </div>
+        <h1 className="text-white text-4xl font-bold my-2">Achievements</h1>
+        <h2 className="text-neutral-300 text-xl my-2">Adding Soon...</h2>
       </div>
     </div>
   );
