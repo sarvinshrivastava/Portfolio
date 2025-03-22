@@ -61,12 +61,12 @@ function Home() {
           {[
             { to: "/", icon: "home-outline", label: "Home" },
             { to: "/about", icon: "person-outline", label: "About" },
-            {
-              to: "/achievements",
-              icon: "trophy-outline",
-              label: "Achievements",
-            },
-            { to: "/projects", icon: "folder-outline", label: "Projects" },
+            // {
+            //   to: "/achievements",
+            //   icon: "trophy-outline",
+            //   label: "Achievements",
+            // },
+            // { to: "/projects", icon: "folder-outline", label: "Projects" },
             { to: "/contact", icon: "chatbubble-outline", label: "Contact" },
           ].map(({ to, icon, label }) => (
             <Link to={to} className="flex items-center relative" key={label}>
