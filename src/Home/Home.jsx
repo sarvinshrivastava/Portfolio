@@ -115,8 +115,8 @@ function Home() {
           {[
             { to: "/", icon: "home", label: "Home" },
             { to: "/about", icon: "person", label: "About" },
-            { to: "/achievements", icon: "trophy", label: "Achievements" },
-            { to: "/projects", icon: "folder", label: "Projects" },
+            // { to: "/achievements", icon: "trophy", label: "Achievements" },
+            // { to: "/projects", icon: "folder", label: "Projects" },
             { to: "/contact", icon: "chatbubble", label: "Contact" },
           ].map(({ to, icon, label }) => (
             <Link
