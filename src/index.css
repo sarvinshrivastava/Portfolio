@@ -1,5 +1,229 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;600&display=swap');
+
 @import "tailwindcss";
 
-body {
-  @apply bg-black text-white;
+/* ── Design tokens ───────────────────────────────── */
+[data-theme='dark'] {
+  --bg: #0d0d0d;
+  --bg-secondary: #141414;
+  --bg-tertiary: #1a1a1a;
+  --border: rgba(255, 255, 255, 0.08);
+  --text: #e8e8e8;
+  --text-muted: #6b6b6b;
+  --text-subtle: #3a3a3a;
+  --accent: #F5A623;
+  --accent-dim: rgba(245, 166, 35, 0.15);
+  color-scheme: dark;
+}
+
+[data-theme='light'] {
+  --bg: #fafafa;
+  --bg-secondary: #f0f0f0;
+  --bg-tertiary: #e8e8e8;
+  --border: rgba(0, 0, 0, 0.08);
+  --text: #111111;
+  --text-muted: #888888;
+  --text-subtle: #cccccc;
+  --accent: #F5A623;
+  --accent-dim: rgba(245, 166, 35, 0.15);
+  color-scheme: light;
+}
+
+/* ── Tailwind theme tokens ───────────────────────── */
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Space Mono', monospace;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-tertiary: var(--bg-tertiary);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-subtle: var(--text-subtle);
+  --color-muted: var(--text-muted);
+  --color-accent: var(--accent);
+  --color-accent-dim: var(--accent-dim);
+}
+
+/* ── Base ─────────────────────────────────────────── */
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    font-size: 16px;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  a {
+    color: var(--accent);
+    text-decoration: none;
+    transition: opacity 0.2s ease;
+  }
+
+  a:hover {
+    opacity: 0.75;
+  }
+
+  ::selection {
+    background: var(--accent-dim);
+    color: var(--accent);
+  }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+}
+
+/* ── Components ──────────────────────────────────── */
+@layer components {
+  .container {
+    max-width: 1200px;
+    margin-inline: auto;
+    padding-inline: 2rem;
+
+    @media (max-width: 768px) {
+      padding-inline: 1rem;
+    }
+  }
+
+  .skip-to-content {
+    position: absolute;
+    top: -100%;
+    left: 1rem;
+    background: var(--accent);
+    color: var(--bg);
+    padding: 0.5rem 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    z-index: 9999;
+    border-radius: 4px;
+  }
+  .skip-to-content:focus {
+    top: 1rem;
+  }
+
+  /* Nav underline hover */
+  .nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transition: transform 0.2s ease;
+  }
+  .nav-link:hover::after,
+  .nav-link.active::after {
+    transform: scaleX(1);
+  }
+
+  /* Timeline vertical line + layout */
+  .timeline-track {
+    position: relative;
+    max-width: 900px;
+    margin-inline: auto;
+  }
+  .timeline-track::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--border);
+    transform: translateX(-50%);
+  }
+
+  .tl-item {
+    display: grid;
+    grid-template-columns: 1fr 24px 1fr;
+    margin-bottom: 2rem;
+    align-items: start;
+  }
+  .tl-item .tl-card-left {
+    grid-column: 1;
+    text-align: right;
+    padding-right: 2rem;
+  }
+  .tl-item .tl-connector-left {
+    grid-column: 2;
+  }
+  .tl-item .tl-card-right {
+    grid-column: 3;
+    grid-row: 1;
+    padding-left: 2rem;
+  }
+  .tl-item .tl-connector-right {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .tl-item .tl-card-left .tl-card-top {
+    flex-direction: row-reverse;
+  }
+
+  @media (max-width: 700px) {
+    .timeline-track::before {
+      left: 12px;
+    }
+    .tl-item {
+      display: flex;
+      flex-direction: row;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+    .tl-item .tl-card-left,
+    .tl-item .tl-card-right {
+      text-align: left;
+      padding: 1.25rem;
+      flex: 1;
+    }
+    .tl-item .tl-card-left .tl-card-top {
+      flex-direction: row;
+    }
+  }
+}
+
+/* ── Utilities ────────────────────────────────────── */
+@layer utilities {
+  .reveal-section {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .reveal-section.revealed {
+    opacity: 1;
+    transform: none;
+  }
+
+  .keynav-focused {
+    outline: 1px solid var(--accent);
+    outline-offset: 6px;
+    border-radius: 4px;
+    transition: outline 0.1s ease;
+  }
+}
+
+/* ── Animations ──────────────────────────────────── */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
