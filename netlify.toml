@@ -2,6 +2,13 @@
   command = "npm run build"
   publish = "dist"
 
+[functions]
+  directory = "netlify/functions"
+
+[build.environment]
+  # VITE_* vars are intentionally bundled into the client by Vite — not secrets
+  SECRETS_SCAN_OMIT_KEYS = "VITE_EMAILJS_PUBLIC_KEY"
+
 [[redirects]]
   from = "/fetch-notion"
   to = "/.netlify/functions/fetch-notion"
