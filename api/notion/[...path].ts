@@ -1,19 +1,24 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+export const config = { runtime: 'edge' };
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const pathSegments = (req.query.path as string[]) ?? [];
-  const notionPath = pathSegments.join('/');
+export default async function handler(request: Request): Promise<Response> {
+  const url = new URL(request.url);
+
+  // Strip /api/notion prefix to get the Notion API path
+  const notionPath = url.pathname.replace(/^\/api\/notion\/?/, '');
 
   const notionRes = await fetch(`https://api.notion.com/v1/${notionPath}`, {
-    method: req.method,
+    method: request.method,
     headers: {
       Authorization: `Bearer ${process.env.NOTION_API_KEY}`,
       'Notion-Version': '2022-06-28',
       'Content-Type': 'application/json',
     },
-    body: req.method !== 'GET' ? JSON.stringify(req.body) : undefined,
+    body: request.method !== 'GET' ? request.body : undefined,
   });
 
-  const data = await notionRes.json();
-  res.status(notionRes.status).json(data);
+  const text = await notionRes.text();
+  return new Response(text, {
+    status: notionRes.status,
+    headers: { 'Content-Type': 'application/json' },
+  });
 }
