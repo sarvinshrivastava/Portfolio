@@ -29,20 +29,13 @@ function richText(blocks: { plain_text: string }[] | undefined): string {
   return blocks?.map(b => b.plain_text).join('') ?? '';
 }
 
+const API_BASE = import.meta.env.VITE_API_URL ?? '';
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type NotionPage = { id: string; properties: Record<string, any> };
 
-async function notionQuery(dbId: string, sort = true): Promise<{ results: NotionPage[] }> {
-  // Routed through /api/notion proxy (Vite dev) or Vercel function (prod)
-  // to avoid CORS — browser cannot call api.notion.com directly
-  const body = sort
-    ? { sorts: [{ property: 'Sort Order', direction: 'ascending' }] }
-    : {};
-  const res = await fetch(`/api/notion/databases/${dbId}/query`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+async function notionQuery(page: string): Promise<{ results: NotionPage[] }> {
+  const res = await fetch(`${API_BASE}/fetch-notion?q=${page}`);
   if (!res.ok) throw new Error(`Notion query failed: ${res.status}`);
   return res.json();
 }
@@ -52,8 +45,7 @@ export async function fetchAbout(): Promise<About> {
   const cached = getCache<About>('notion_about');
   if (cached) return cached;
 
-  const dbId = import.meta.env.VITE_NOTION_DB_ABOUT;
-  const { results } = await notionQuery(dbId, false);
+  const { results } = await notionQuery('about');
   const p = results[0]?.properties ?? {};
 
   const data: About = {
@@ -76,8 +68,7 @@ export async function fetchProjects(): Promise<Project[]> {
   const cached = getCache<Project[]>('notion_projects');
   if (cached) return cached;
 
-  const dbId = import.meta.env.VITE_NOTION_DB_PROJECTS;
-  const { results } = await notionQuery(dbId);
+  const { results } = await notionQuery('projects');
 
   const data: Project[] = results.map(page => {
     const p = page.properties;
@@ -104,8 +95,7 @@ export async function fetchTimeline(): Promise<TimelineEvent[]> {
   const cached = getCache<TimelineEvent[]>('notion_timeline');
   if (cached) return cached;
 
-  const dbId = import.meta.env.VITE_NOTION_DB_TIMELINE;
-  const { results } = await notionQuery(dbId);
+  const { results } = await notionQuery('timeline');
 
   const data: TimelineEvent[] = results.map(page => {
     const p = page.properties;
@@ -129,8 +119,7 @@ export async function fetchExperience(): Promise<Experience[]> {
   const cached = getCache<Experience[]>('notion_experience');
   if (cached) return cached;
 
-  const dbId = import.meta.env.VITE_NOTION_DB_EXPERIENCE;
-  const { results } = await notionQuery(dbId);
+  const { results } = await notionQuery('experience');
 
   const data: Experience[] = results.map(page => {
     const p = page.properties;
