@@ -29,14 +29,22 @@ function richText(blocks: { plain_text: string }[] | undefined): string {
   return blocks?.map(b => b.plain_text).join('') ?? '';
 }
 
-const API_BASE = import.meta.env.VITE_API_URL ?? '';
+const CACHE_API = import.meta.env.VITE_NOTION_CACHE_URL ?? '';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const DB_MAP: Record<string, string> = {
+  about:      import.meta.env.VITE_NOTION_DB_ABOUT ?? '',
+  projects:   import.meta.env.VITE_NOTION_DB_PROJECTS ?? '',
+  timeline:   import.meta.env.VITE_NOTION_DB_TIMELINE ?? '',
+  experience: import.meta.env.VITE_NOTION_DB_EXPERIENCE ?? '',
+};
+
 type NotionPage = { id: string; properties: Record<string, any> };
 
 async function notionQuery(page: string): Promise<{ results: NotionPage[] }> {
-  const res = await fetch(`${API_BASE}/fetch-notion?q=${page}`);
-  if (!res.ok) throw new Error(`Notion query failed: ${res.status}`);
+  const dbId = DB_MAP[page];
+  if (!dbId) throw new Error(`Unknown page: ${page}`);
+  const res = await fetch(`${CACHE_API}/api/database/${dbId}`);
+  if (!res.ok) throw new Error(`Notion cache query failed: ${res.status}`);
   return res.json();
 }
 

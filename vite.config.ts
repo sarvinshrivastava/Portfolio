@@ -7,8 +7,9 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     proxy: {
-      // Forward to netlify dev (port 8888) when running plain `vite`
-      '/fetch-notion': 'http://localhost:8888',
+      // Proxy Notion cache API during local dev
+      '/api/database': 'http://localhost:3001', // notion-cache running locally
+      '/api/pages': 'http://localhost:3001',
     },
   },
 })
