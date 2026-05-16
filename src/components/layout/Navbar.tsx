@@ -16,14 +16,12 @@ const NAV_LINKS = [
 ];
 
 export function Navbar({ theme, onThemeToggle, resumeUrl }: NavbarProps) {
-  const [menuOpen, setMenuOpen] = useState(false);
+  // Storing the pathname at which the menu was opened means location change
+  // automatically closes it without any setState-in-effect.
+  const [menuOpenAt, setMenuOpenAt] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMenuOpen(false);
-  }, [location]);
+  const menuOpen = menuOpenAt === location.pathname;
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20);
@@ -90,7 +88,7 @@ export function Navbar({ theme, onThemeToggle, resumeUrl }: NavbarProps) {
           {/* Hamburger */}
           <button
             className="flex md:hidden flex-col gap-[5px] bg-transparent border-none cursor-pointer p-1"
-            onClick={() => setMenuOpen(o => !o)}
+            onClick={() => setMenuOpenAt(menuOpen ? null : location.pathname)}
             aria-expanded={menuOpen}
             aria-label="Toggle menu"
           >
