@@ -1,4 +1,10 @@
+import { useAbout } from '../../context/AboutContext';
+
 export function Footer() {
+  const about = useAbout();
+  const githubUrl = about?.github ?? 'https://github.com/sarvinshrivastava';
+  const linkedinUrl = about?.linkedin ?? 'https://linkedin.com/in/sarvin-shrivastava';
+
   return (
     <footer className="border-t border-border mt-24 py-8">
       <div className="container flex justify-between items-center flex-wrap gap-2 text-[0.8125rem]">
@@ -8,7 +14,7 @@ export function Footer() {
         </span>
         <span>
           <a
-            href="https://github.com/sarvinshrivastava"
+            href={githubUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="font-mono"
@@ -17,7 +23,7 @@ export function Footer() {
           </a>
           {' · '}
           <a
-            href="https://linkedin.com/in/sarvin-shrivastava"
+            href={linkedinUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="font-mono"

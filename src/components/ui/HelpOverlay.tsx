@@ -9,6 +9,7 @@ export function HelpOverlay({ onClose }: HelpOverlayProps) {
       role="dialog"
       aria-modal="true"
       aria-label="Keyboard shortcuts"
+      onKeyDown={e => { if (e.key === 'Escape') onClose(); }}
     >
       {/* Backdrop */}
       <div
