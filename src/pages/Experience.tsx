@@ -15,9 +15,11 @@ const fadeInUp = {
 
 function formatDate(dateStr?: string): string {
   if (!dateStr) return 'Present';
-  const [year, month] = dateStr.split('-');
+  const parts = dateStr.split('-');
+  const year = parts[0];
+  const monthIdx = parseInt(parts[1] ?? '0') - 1;
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return `${months[parseInt(month) - 1]} ${year}`;
+  return `${months[monthIdx] ?? dateStr} ${year}`;
 }
 
 function isCurrentRole(endDate?: string): boolean {
@@ -133,7 +135,7 @@ export function Experience() {
               {/* Bullets */}
               <div className="flex flex-col gap-[9px] mb-5">
                 {exp.description.map((line, j) => (
-                  <p key={j} className="text-sm text-text-muted font-sans leading-relaxed pl-4 relative">
+                  <p key={`${exp.id}-${j}`} className="text-sm text-text-muted font-sans leading-relaxed pl-4 relative">
                     <span className="absolute left-0 top-[3px] text-accent text-[11px]" aria-hidden="true">▸</span>
                     <BulletText text={line} techStack={exp.techStack} />
                   </p>
