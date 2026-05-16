@@ -38,7 +38,8 @@ const DB_MAP: Record<string, string> = {
   experience: import.meta.env.VITE_NOTION_DB_EXPERIENCE ?? '',
 };
 
-type NotionPage = { id: string; properties: Record<string, unknown> };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type NotionPage = { id: string; properties: Record<string, any> };
 
 async function notionQuery(page: string): Promise<{ results: NotionPage[] }> {
   const dbId = DB_MAP[page];
