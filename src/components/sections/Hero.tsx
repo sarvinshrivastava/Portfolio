@@ -1,20 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchAbout } from '../../services/notion';
+import { useAbout } from '../../context/AboutContext';
 
 export function Hero() {
-  const [roles, setRoles] = useState<string[]>([]);
-  const [resumeUrl, setResumeUrl] = useState<string | undefined>();
+  const about = useAbout();
+  const roles = useMemo(() => about?.roles ?? [], [about]);
+  const resumeUrl = about?.resumeUrl;
   const [roleIndex, setRoleIndex] = useState(0);
   const [displayed, setDisplayed] = useState('');
   const [deleting, setDeleting] = useState(false);
-
-  useEffect(() => {
-    fetchAbout().then(d => {
-      setRoles(d.roles);
-      setResumeUrl(d.resumeUrl);
-    });
-  }, []);
 
   useEffect(() => {
     if (roles.length === 0) return;

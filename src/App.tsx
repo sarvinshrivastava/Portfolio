@@ -10,20 +10,22 @@ import { HelpOverlay } from './components/ui/HelpOverlay';
 import { useTheme } from './hooks/useTheme';
 import { useKeyboardNav } from './hooks/useKeyboardNav';
 import { fetchAbout } from './services/notion';
+import { AboutContext } from './context/AboutContext';
+import type { About } from './types';
 
 function AppInner() {
   const { theme, toggle } = useTheme();
-  const [resumeUrl, setResumeUrl] = useState<string | undefined>();
-  const { showHelp, setShowHelp } = useKeyboardNav({ onThemeToggle: toggle, resumeUrl });
+  const [about, setAbout] = useState<About | null>(null);
+  const { showHelp, setShowHelp } = useKeyboardNav({ onThemeToggle: toggle, resumeUrl: about?.resumeUrl });
 
   useEffect(() => {
-    fetchAbout().then(d => setResumeUrl(d.resumeUrl));
+    fetchAbout().then(setAbout);
   }, []);
 
   return (
-    <>
+    <AboutContext.Provider value={about}>
       <a href="#main" className="skip-to-content">Skip to content</a>
-      <Navbar theme={theme} onThemeToggle={toggle} resumeUrl={resumeUrl} />
+      <Navbar theme={theme} onThemeToggle={toggle} resumeUrl={about?.resumeUrl} />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/projects" element={<Projects />} />
@@ -32,7 +34,7 @@ function AppInner() {
       </Routes>
       <Footer />
       {showHelp && <HelpOverlay onClose={() => setShowHelp(false)} />}
-    </>
+    </AboutContext.Provider>
   );
 }
 

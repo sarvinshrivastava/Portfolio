@@ -1,19 +1,10 @@
-import { useEffect, useState } from 'react';
-import { fetchAbout } from '../../services/notion';
 import { useScrollReveal } from '../../hooks/useScrollReveal';
 import { SectionHeading } from '../ui/SectionHeading';
-import type { About as AboutData } from '../../types';
+import { useAbout } from '../../context/AboutContext';
 
 export function About() {
-  const [data, setData] = useState<AboutData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const data = useAbout();
   const ref = useScrollReveal<HTMLElement>();
-
-  useEffect(() => {
-    fetchAbout()
-      .then(setData)
-      .finally(() => setLoading(false));
-  }, []);
 
   return (
     <section
@@ -26,7 +17,7 @@ export function About() {
       <div className="container">
         <SectionHeading prefix="## about" title="Who I Am" />
 
-        {loading && <p className="text-muted font-mono">$ loading...</p>}
+        {!data && <p className="text-muted font-mono">$ loading...</p>}
 
         {data && (
           <div className="grid grid-cols-[360px_1fr] gap-16 items-start max-[900px]:grid-cols-1 max-[900px]:gap-10">

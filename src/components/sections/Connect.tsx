@@ -14,17 +14,25 @@ interface FormTouched {
   message: boolean;
 }
 
-function validate(name: string, email: string, message: string): FormErrors {
-  const errors: FormErrors = {};
-  if (!name.trim()) errors.name = 'Name is required.';
-  if (!email.trim()) {
-    errors.email = 'Email is required.';
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-    errors.email = 'Enter a valid email address.';
+function validateField(field: keyof FormTouched, value: string): string | undefined {
+  const v = value.trim();
+  if (field === 'name') return v ? undefined : 'Name is required.';
+  if (field === 'email') {
+    if (!v) return 'Email is required.';
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? undefined : 'Enter a valid email address.';
   }
-  if (!message.trim()) errors.message = 'Message is required.';
-  else if (message.trim().length < 10) errors.message = 'Message must be at least 10 characters.';
-  return errors;
+  if (field === 'message') {
+    if (!v) return 'Message is required.';
+    return v.length >= 10 ? undefined : 'Message must be at least 10 characters.';
+  }
+}
+
+function validate(name: string, email: string, message: string): FormErrors {
+  return {
+    name: validateField('name', name),
+    email: validateField('email', email),
+    message: validateField('message', message),
+  };
 }
 
 export function Connect() {
@@ -34,9 +42,7 @@ export function Connect() {
 
   const handleBlur = (field: keyof FormTouched, value: string) => {
     setTouched(t => ({ ...t, [field]: true }));
-    const form = { name: '', email: '', message: '', [field]: value };
-    const errs = validate(form.name, form.email, form.message);
-    setErrors(prev => ({ ...prev, [field]: errs[field] }));
+    setErrors(prev => ({ ...prev, [field]: validateField(field, value) }));
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -51,7 +57,7 @@ export function Connect() {
     setTouched({ name: true, email: true, message: true });
     const errs = validate(name, email, message);
     setErrors(errs);
-    if (Object.keys(errs).length > 0) return;
+    if (Object.values(errs).some(Boolean)) return;
 
     setStatus('sending');
     try {
