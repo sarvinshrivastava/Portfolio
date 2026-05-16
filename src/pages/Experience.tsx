@@ -78,11 +78,7 @@ export function Experience() {
   useEffect(() => {
     fetchExperience()
       .then(data => {
-        data.sort((a, b) =>
-          a.sortOrder !== b.sortOrder
-            ? a.sortOrder - b.sortOrder
-            : b.startDate.localeCompare(a.startDate),
-        );
+        data.sort((a, b) => b.startDate.localeCompare(a.startDate));
         setExperiences(data);
       })
       .finally(() => setLoading(false));
