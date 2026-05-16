@@ -19,7 +19,7 @@ function AppInner() {
   const { showHelp, setShowHelp } = useKeyboardNav({ onThemeToggle: toggle, resumeUrl: about?.resumeUrl });
 
   useEffect(() => {
-    fetchAbout().then(setAbout);
+    fetchAbout().then(setAbout).catch(console.warn);
   }, []);
 
   return (

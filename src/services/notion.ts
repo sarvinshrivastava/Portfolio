@@ -43,7 +43,7 @@ type NotionPage = { id: string; properties: Record<string, any> };
 
 async function notionQuery(page: string): Promise<{ results: NotionPage[] }> {
   const dbId = DB_MAP[page];
-  if (!dbId) throw new Error(`Unknown page: ${page}`);
+  if (!dbId) throw new Error(`VITE_NOTION_DB_${page.toUpperCase()} is not set — add it to your .env and Netlify environment variables`);
   const res = await fetch(`${CACHE_API}/api/database/${dbId}`);
   if (!res.ok) throw new Error(`Notion cache query failed: ${res.status}`);
   return res.json();
