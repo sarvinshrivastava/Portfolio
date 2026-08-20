@@ -45,3 +45,6 @@ export interface About {
 
 export type Theme = 'dark' | 'light';
 export type AccentColor = string;
+
+/** The four Notion databases the site reads. Keyed by `DB_MAP` in services/notion.ts. */
+export type Dataset = 'about' | 'projects' | 'timeline' | 'experience';

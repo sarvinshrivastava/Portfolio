@@ -8,6 +8,15 @@
     <meta property="og:title" content="Sarvin Shrivastava — Portfolio" />
     <meta property="og:description" content="Building interfaces, AR experiences, and CLI tools." />
     <title>Sarvin Shrivastava</title>
+    <!--
+      Analytics: the umami tracker <script> and its preconnect <link> are injected
+      here at build time by the `inject-umami` plugin in vite.config.ts. That plugin
+      only fires for a production build outside a Netlify preview context, so
+      `vite dev`, `--mode development` builds, deploy-previews and branch-deploys all
+      stay out of the production stats. The tracker itself is vendored at
+      public/umami.js and served same-origin; only the collected data leaves for the
+      VPS. Custom events live in src/lib/analytics.ts.
+    -->
   </head>
   <body>
     <div id="root"></div>

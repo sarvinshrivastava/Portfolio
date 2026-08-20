@@ -18,7 +18,20 @@ function formatDate(dateStr?: string): string {
   const parts = dateStr.split('-');
   const year = parts[0];
   const monthIdx = parseInt(parts[1] ?? '0') - 1;
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
   return `${months[monthIdx] ?? dateStr} ${year}`;
 }
 
@@ -50,7 +63,9 @@ function BulletText({ text, techStack }: { text: string; techStack: string[] }) 
     return (
       <>
         {clean.slice(0, numMatch.index)}
-        <span className="font-mono font-medium text-text text-[15px] tracking-tight">{numMatch[0]}</span>
+        <span className="font-mono font-medium text-text text-[15px] tracking-tight">
+          {numMatch[0]}
+        </span>
         {clean.slice(numMatch.index + numMatch[0].length)}
       </>
     );
@@ -62,7 +77,9 @@ function BulletText({ text, techStack }: { text: string; techStack: string[] }) 
     return (
       <>
         {clean.slice(0, capsMatch.index)}
-        <span className="font-mono font-medium text-text text-[15px] tracking-tight">{capsMatch[0]}</span>
+        <span className="font-mono font-medium text-text text-[15px] tracking-tight">
+          {capsMatch[0]}
+        </span>
         {clean.slice(capsMatch.index + capsMatch[0].length)}
       </>
     );
@@ -81,6 +98,7 @@ export function Experience() {
         data.sort((a, b) => b.startDate.localeCompare(a.startDate));
         setExperiences(data);
       })
+      .catch(console.warn)
       .finally(() => setLoading(false));
   }, []);
 
@@ -108,7 +126,9 @@ export function Experience() {
               {/* Header row */}
               <div className="flex justify-between items-start gap-4 mb-6">
                 <div>
-                  <h2 className="text-xl font-medium font-mono tracking-tight text-text">{exp.company}</h2>
+                  <h2 className="text-xl font-medium font-mono tracking-tight text-text">
+                    {exp.company}
+                  </h2>
                   <p className="text-xs text-text-muted font-sans mt-[3px]">{exp.role}</p>
                   {isCurrentRole(exp.endDate) && (
                     <div className="flex items-center gap-1 mt-[6px]">
@@ -131,8 +151,16 @@ export function Experience() {
               {/* Bullets */}
               <div className="flex flex-col gap-[9px] mb-5">
                 {exp.description.map((line, j) => (
-                  <p key={`${exp.id}-${j}`} className="text-sm text-text-muted font-sans leading-relaxed pl-4 relative">
-                    <span className="absolute left-0 top-[3px] text-accent text-[11px]" aria-hidden="true">▸</span>
+                  <p
+                    key={`${exp.id}-${j}`}
+                    className="text-sm text-text-muted font-sans leading-relaxed pl-4 relative"
+                  >
+                    <span
+                      className="absolute left-0 top-[3px] text-accent text-[11px]"
+                      aria-hidden="true"
+                    >
+                      ▸
+                    </span>
                     <BulletText text={line} techStack={exp.techStack} />
                   </p>
                 ))}

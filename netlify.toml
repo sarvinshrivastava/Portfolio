@@ -1,5 +1,5 @@
 [build]
-  command = "npm run build"
+  command = "bun run build"
   publish = "dist"
 
 [functions]
@@ -8,6 +8,71 @@
 [build.environment]
   # VITE_* vars are intentionally bundled into the client by Vite — not secrets
   SECRETS_SCAN_OMIT_KEYS = "VITE_EMAILJS_PUBLIC_KEY"
+
+# Security headers. Applied to every response; Netlify merges these on top of
+# its own. Getting the CSP wrong breaks the site silently (the browser just
+# refuses to load the offending resource), so every directive below is
+# justified against something that actually exists in this build.
+[[headers]]
+  for = "/*"
+
+  [headers.values]
+    # default-src is the fallback for anything not named explicitly below.
+    #
+    # script-src 'self'
+    #   Nothing loads third-party JS any more: the umami tracker is vendored at
+    #   public/umami.js and served from this origin (see vite.config.ts). The
+    #   built index.html contains no inline <script>, only module/defer tags
+    #   with src attributes, so no 'unsafe-inline' and no nonces are needed.
+    #
+    # style-src 'self' 'unsafe-inline' https://fonts.googleapis.com
+    #   fonts.googleapis.com is required: src/index.css starts with
+    #   `@import url('https://fonts.googleapis.com/css2?...')` and Vite keeps
+    #   remote @import rules in the emitted CSS rather than inlining them. A
+    #   stylesheet pulled in by @import is checked against style-src.
+    #   'unsafe-inline' is the deliberately conservative part. Nothing in the
+    #   CURRENT build provably needs it — Vite emits an external stylesheet,
+    #   Tailwind v4 does all its work at build time, and React's style={{…}}
+    #   props go through the CSSOM (element.style), which CSP does not police.
+    #   It is kept because framer-motion (used in src/pages) injects a real
+    #   <style> element from AnimatePresence's PopChild, so the first
+    #   `<AnimatePresence mode="popLayout">` added to this app would break
+    #   layout with no error anyone would connect to this file. 'unsafe-inline'
+    #   on style-src costs almost nothing — it does not weaken script-src at
+    #   all. Dropping it is a fine follow-up, but only after loading the built
+    #   site in a browser with the console open.
+    #
+    # font-src 'self' https://fonts.gstatic.com data:
+    #   The Google Fonts stylesheet above serves its actual woff2 files from
+    #   fonts.gstatic.com, a different host from the stylesheet's.
+    #
+    # img-src 'self' data: https:
+    #   Deliberately broad. Project cards render `imageUrl`, which comes
+    #   straight from the Notion "Image URL" property (src/services/notion.ts)
+    #   and can therefore point at any https host. Narrowing this would blank
+    #   out project images the moment an image is re-hosted in Notion.
+    #
+    # connect-src
+    #   'self' covers the relative /api/database and /api/pages calls; the
+    #   three hosts are the umami collection endpoint (${host}/api/send), the
+    #   Notion cache when VITE_NOTION_CACHE_URL is set to an absolute URL, and
+    #   EmailJS, which the contact form POSTs to.
+    #
+    # frame-ancestors 'none'  — no one may iframe this site (clickjacking).
+    # frame-src 'none'        — this site embeds no iframes.
+    # object-src 'none'       — no <object>/<embed>/Flash-era plugin content.
+    # base-uri 'self'         — an injected <base> can't re-point relative URLs.
+    # form-action 'self'      — the contact form submits over fetch, never a
+    #                           native form POST to a third party.
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://umami.vps.sarvinshrivastava.space https://notion-cache.vps.sarvinshrivastava.space https://api.emailjs.com; frame-ancestors 'none'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+
+    # Stop the browser from second-guessing a declared Content-Type (an upload
+    # served as text/plain must never be sniffed into executable script).
+    X-Content-Type-Options = "nosniff"
+
+    # Send the full URL only to same-origin requests; cross-origin gets the
+    # bare origin, and https -> http gets nothing.
+    Referrer-Policy = "strict-origin-when-cross-origin"
 
 [[redirects]]
   from = "/*"

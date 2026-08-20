@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAbout } from '../../context/AboutContext';
+import { track } from '../../lib/analytics';
 
 export function Hero() {
   const about = useAbout();
@@ -60,10 +61,7 @@ export function Hero() {
             </p>
             <p className="pl-4 text-text-muted leading-relaxed min-h-[1.6em]">
               {displayed}
-              <span
-                className="text-accent animate-[blink_1s_step-end_infinite]"
-                aria-hidden="true"
-              >
+              <span className="text-accent animate-[blink_1s_step-end_infinite]" aria-hidden="true">
                 ▌
               </span>
             </p>
@@ -101,6 +99,7 @@ export function Hero() {
                 target="_blank"
                 rel="noopener noreferrer"
                 data-keynav-element
+                onClick={() => track('resume_open', { source: 'hero' })}
                 className="inline-flex items-center font-mono text-sm text-text-muted border border-border px-6 py-3 rounded transition-all duration-200 hover:opacity-100 hover:text-text hover:border-text-muted hover:-translate-y-px"
               >
                 ↓ resume
