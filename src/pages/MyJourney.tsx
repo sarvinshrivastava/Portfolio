@@ -127,7 +127,13 @@ export function MyJourney() {
                     role="button"
                     aria-expanded={isOpen}
                     tabIndex={0}
-                    onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && toggleExpand(event)}
+                    onKeyDown={e => {
+                      if (e.key !== 'Enter' && e.key !== ' ') return;
+                      // role="button" does not inherit a native button's
+                      // suppression of Space, so cancel the page scroll first
+                      e.preventDefault();
+                      toggleExpand(event);
+                    }}
                   >
                     {/* Graph column */}
                     <div className="relative flex flex-col items-center pt-1">
