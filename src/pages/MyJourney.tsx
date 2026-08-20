@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { fetchTimeline } from '../services/notion';
 import { SectionHeading } from '../components/ui/SectionHeading';
+import { track } from '../lib/analytics';
 import type { TimelineEvent } from '../types';
 
 const fadeInUp = {
@@ -14,31 +15,31 @@ const fadeInUp = {
 };
 
 const NODE_COLOR: Record<string, { border: string; fill?: string }> = {
-  Education:   { border: '#378ADD' },
-  Leadership:  { border: '#1D9E75' },
+  Education: { border: '#378ADD' },
+  Leadership: { border: '#1D9E75' },
   Achievement: { border: '#D4537E', fill: '#D4537E' },
-  Milestone:   { border: '#F5A623', fill: '#F5A623' },
+  Milestone: { border: '#F5A623', fill: '#F5A623' },
 };
 
 const BADGE_STYLE: Record<string, { bg: string; color: string }> = {
-  Education:   { bg: '#E6F1FB', color: '#0C447C' },
-  Leadership:  { bg: '#E1F5EE', color: '#085041' },
+  Education: { bg: '#E6F1FB', color: '#0C447C' },
+  Leadership: { bg: '#E1F5EE', color: '#085041' },
   Achievement: { bg: '#FBEAF0', color: '#72243E' },
-  Milestone:   { bg: '#FAEEDA', color: '#633806' },
+  Milestone: { bg: '#FAEEDA', color: '#633806' },
 };
 
 const COMMIT_SCOPE: Record<string, string> = {
-  Education:   'init(edu)',
-  Leadership:  'feat(lead)',
+  Education: 'init(edu)',
+  Leadership: 'feat(lead)',
   Achievement: 'release',
-  Milestone:   'feat',
+  Milestone: 'feat',
 };
 
 const FOOTER_COLORS: Record<string, string> = {
-  education:   '#378ADD',
-  leadership:  '#1D9E75',
+  education: '#378ADD',
+  leadership: '#1D9E75',
   achievement: '#D4537E',
-  milestone:   '#F5A623',
+  milestone: '#F5A623',
 };
 
 function fakeHash(id: string): string {
@@ -56,11 +57,20 @@ export function MyJourney() {
         data.sort((a, b) => a.sortOrder - b.sortOrder);
         setEvents(data);
       })
+      .catch(console.warn)
       .finally(() => setLoading(false));
   }, []);
 
-  function toggleExpand(id: string) {
-    setExpanded(prev => (prev === id ? null : id));
+  // Takes the whole event so the expand can be reported with its title/category
+  function toggleExpand(event: TimelineEvent) {
+    const opening = expanded !== event.id;
+    if (opening) {
+      track('journey_commit_expand', {
+        title: event.title,
+        category: event.category,
+      });
+    }
+    setExpanded(opening ? event.id : null);
   }
 
   return (
@@ -113,11 +123,11 @@ export function MyJourney() {
                     variants={fadeInUp}
                     className="grid gap-x-2 cursor-pointer rounded-sm px-1 py-1 transition-colors duration-100 hover:bg-white/[0.04]"
                     style={{ gridTemplateColumns: '20px 1fr' }}
-                    onClick={() => toggleExpand(event.id)}
+                    onClick={() => toggleExpand(event)}
                     role="button"
                     aria-expanded={isOpen}
                     tabIndex={0}
-                    onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && toggleExpand(event.id)}
+                    onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && toggleExpand(event)}
                   >
                     {/* Graph column */}
                     <div className="relative flex flex-col items-center pt-1">
@@ -137,18 +147,22 @@ export function MyJourney() {
                     {/* Commit body */}
                     <div className="pb-[2px]">
                       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 mb-[1px]">
-                        <span className="text-accent font-medium text-[11px]">{fakeHash(event.id)}</span>
+                        <span className="text-accent font-medium text-[11px]">
+                          {fakeHash(event.id)}
+                        </span>
                         <span className="text-text-muted text-[10px]">{event.date}</span>
                         <span
                           className="text-[10px] font-medium px-1.5 rounded-full"
-                          style={{ backgroundColor: badge.bg, color: badge.color }}
+                          style={{
+                            backgroundColor: badge.bg,
+                            color: badge.color,
+                          }}
                         >
                           {event.category.toLowerCase()}
                         </span>
                       </div>
                       <div className="text-text-muted text-xs">
-                        <span className="text-[#378ADD]">{scope}:</span>{' '}
-                        {event.title}
+                        <span className="text-[#378ADD]">{scope}:</span> {event.title}
                       </div>
                       {isOpen && event.description && (
                         <div className="mt-1 text-[11px] text-text-muted leading-relaxed max-w-[500px]">

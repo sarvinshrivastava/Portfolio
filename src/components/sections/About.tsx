@@ -1,6 +1,7 @@
 import { useScrollReveal } from '../../hooks/useScrollReveal';
 import { SectionHeading } from '../ui/SectionHeading';
 import { useAbout } from '../../context/AboutContext';
+import { trackSocial, type SocialNetwork } from '../../lib/analytics';
 import type { About as AboutData } from '../../types';
 
 const LINK_CLASSES =
@@ -11,15 +12,56 @@ interface SocialEntry {
   prefix: string;
   label: string;
   external: boolean;
+  network: SocialNetwork;
 }
 
 function getSocialLinks(data: AboutData): SocialEntry[] {
   return [
-    data.github   ? { href: data.github,           prefix: '$ git clone', label: 'GitHub',      external: true  } : null,
-    data.linkedin ? { href: data.linkedin,          prefix: '$ connect',   label: 'LinkedIn',    external: true  } : null,
-    data.x        ? { href: data.x,                 prefix: '$ follow',    label: 'X / Twitter', external: true  } : null,
-    data.medium   ? { href: data.medium,            prefix: '$ read',      label: 'Medium',      external: true  } : null,
-    data.email    ? { href: `mailto:${data.email}`, prefix: '$ mail',      label: data.email,    external: false } : null,
+    data.github
+      ? {
+          href: data.github,
+          prefix: '$ git clone',
+          label: 'GitHub',
+          external: true,
+          network: 'github',
+        }
+      : null,
+    data.linkedin
+      ? {
+          href: data.linkedin,
+          prefix: '$ connect',
+          label: 'LinkedIn',
+          external: true,
+          network: 'linkedin',
+        }
+      : null,
+    data.x
+      ? {
+          href: data.x,
+          prefix: '$ follow',
+          label: 'X / Twitter',
+          external: true,
+          network: 'x',
+        }
+      : null,
+    data.medium
+      ? {
+          href: data.medium,
+          prefix: '$ read',
+          label: 'Medium',
+          external: true,
+          network: 'medium',
+        }
+      : null,
+    data.email
+      ? {
+          href: `mailto:${data.email}`,
+          prefix: '$ mail',
+          label: data.email,
+          external: false,
+          network: 'email',
+        }
+      : null,
   ].filter((x): x is SocialEntry => x !== null);
 }
 
@@ -49,11 +91,12 @@ export function About() {
                 className="w-full aspect-square object-cover object-top rounded-md border border-border grayscale-[20%]"
               />
               <div className="flex flex-col gap-2">
-                {getSocialLinks(data).map(({ href, prefix, label, external }) => (
+                {getSocialLinks(data).map(({ href, prefix, label, external, network }) => (
                   <a
                     key={href}
                     href={href}
                     {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                    onClick={trackSocial(network, 'about')}
                     className={LINK_CLASSES}
                   >
                     <span className="font-mono text-accent text-xs min-w-[70px]">{prefix}</span>

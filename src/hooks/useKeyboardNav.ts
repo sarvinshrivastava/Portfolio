@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { track } from '../lib/analytics';
 
 type NavMode = 'idle' | 'section' | 'element';
 
@@ -19,13 +20,25 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
   const location = useLocation();
 
   // Refs so the single event listener always reads current values without stale closures
-  const stateRef = useRef({ mode, sectionIndex, elementIndex, showHelp, pathname: location.pathname });
+  const stateRef = useRef({
+    mode,
+    sectionIndex,
+    elementIndex,
+    showHelp,
+    pathname: location.pathname,
+  });
   const resumeRef = useRef(resumeUrl);
   const toggleRef = useRef(onThemeToggle);
 
   // Sync refs after each render (useLayoutEffect = before paint, safe for event handlers)
   useLayoutEffect(() => {
-    stateRef.current = { mode, sectionIndex, elementIndex, showHelp, pathname: location.pathname };
+    stateRef.current = {
+      mode,
+      sectionIndex,
+      elementIndex,
+      showHelp,
+      pathname: location.pathname,
+    };
     resumeRef.current = resumeUrl;
     toggleRef.current = onThemeToggle;
   }, [mode, sectionIndex, elementIndex, showHelp, location.pathname, resumeUrl, onThemeToggle]);
@@ -36,13 +49,17 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
     setMode('idle');
     setSectionIndex(0);
     setElementIndex(0);
-    document.querySelectorAll('.keynav-focused').forEach(el => el.classList.remove('keynav-focused'));
+    document
+      .querySelectorAll('.keynav-focused')
+      .forEach(el => el.classList.remove('keynav-focused'));
   }, [location.pathname]);
 
   // Register a single persistent listener; uses refs for all mutable values
   useEffect(() => {
     const removeFocus = () =>
-      document.querySelectorAll('.keynav-focused').forEach(el => el.classList.remove('keynav-focused'));
+      document
+        .querySelectorAll('.keynav-focused')
+        .forEach(el => el.classList.remove('keynav-focused'));
 
     const getSections = (): Element[] =>
       Array.from(document.querySelectorAll('[data-keynav-section]'));
@@ -239,7 +256,10 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
           // Only 'r' alone — modifiers already blocked above
           if (resumeRef.current) {
             e.preventDefault();
-            window.open(resumeRef.current, '_blank');
+            track('resume_open', { source: 'keyboard' });
+            // 'noopener' is not implicit here — unlike <a target="_blank">,
+            // window.open hands the new tab a live window.opener
+            window.open(resumeRef.current, '_blank', 'noopener');
           }
           break;
         }

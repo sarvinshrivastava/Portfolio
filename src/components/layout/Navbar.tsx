@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { track } from '../../lib/analytics';
 import type { Theme } from '../../types';
 
 interface NavbarProps {
@@ -32,12 +33,13 @@ export function Navbar({ theme, onThemeToggle, resumeUrl }: NavbarProps) {
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-100 transition-[background,border-color] border-b ${
-        scrolled
-          ? 'bg-bg border-border backdrop-blur-sm'
-          : 'border-transparent'
+        scrolled ? 'bg-bg border-border backdrop-blur-sm' : 'border-transparent'
       }`}
     >
-      <nav className="container flex items-center justify-between h-16" aria-label="Main navigation">
+      <nav
+        className="container flex items-center justify-between h-16"
+        aria-label="Main navigation"
+      >
         <NavLink
           to="/"
           className="font-mono text-base font-bold text-text tracking-tight hover:opacity-100"
@@ -72,6 +74,7 @@ export function Navbar({ theme, onThemeToggle, resumeUrl }: NavbarProps) {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Download resume"
+              onClick={() => track('resume_open', { source: 'navbar' })}
               className="hidden md:flex bg-transparent border border-border text-text-muted text-xs font-mono px-3 h-9 rounded items-center gap-1 transition-[color,border-color] hover:text-accent hover:border-accent"
             >
               ↓ cv
@@ -101,7 +104,11 @@ export function Navbar({ theme, onThemeToggle, resumeUrl }: NavbarProps) {
 
       {/* Mobile drawer */}
       {menuOpen && (
-        <div className="bg-bg-secondary border-b border-border py-4" role="dialog" aria-label="Mobile menu">
+        <div
+          className="bg-bg-secondary border-b border-border py-4"
+          role="dialog"
+          aria-label="Mobile menu"
+        >
           <ul role="list">
             {NAV_LINKS.map(({ to, label, exact }) => (
               <li key={to}>
@@ -116,7 +123,8 @@ export function Navbar({ theme, onThemeToggle, resumeUrl }: NavbarProps) {
                     }`
                   }
                 >
-                  <span className="text-accent">$ </span>{label}
+                  <span className="text-accent">$ </span>
+                  {label}
                 </NavLink>
               </li>
             ))}
@@ -126,6 +134,7 @@ export function Navbar({ theme, onThemeToggle, resumeUrl }: NavbarProps) {
                   href={resumeUrl}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => track('resume_open', { source: 'mobile_menu' })}
                   className="block px-6 py-3 font-mono text-[0.9rem] text-text-muted transition-[color,background] hover:text-text hover:bg-bg-tertiary"
                 >
                   <span className="text-accent">$ </span>↓ resume

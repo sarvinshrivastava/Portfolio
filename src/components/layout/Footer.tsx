@@ -1,4 +1,5 @@
 import { useAbout } from '../../context/AboutContext';
+import { trackSocial } from '../../lib/analytics';
 
 export function Footer() {
   const about = useAbout();
@@ -17,6 +18,7 @@ export function Footer() {
             href={githubUrl}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={trackSocial('github', 'footer')}
             className="font-mono"
           >
             github
@@ -26,6 +28,7 @@ export function Footer() {
             href={linkedinUrl}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={trackSocial('linkedin', 'footer')}
             className="font-mono"
           >
             linkedin

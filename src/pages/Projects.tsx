@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { fetchProjects } from '../services/notion';
 import { SectionHeading } from '../components/ui/SectionHeading';
 import { Tag } from '../components/ui/Tag';
+import { track } from '../lib/analytics';
 import type { Project } from '../types';
 
 const CATEGORIES = ['All', 'AI/ML', 'AR/VR', 'Web Dev', 'Tools'] as const;
@@ -14,10 +15,18 @@ export function Projects() {
   useEffect(() => {
     fetchProjects()
       .then(setProjects)
+      .catch(console.warn)
       .finally(() => setLoading(false));
   }, []);
 
   const filtered = filter === 'All' ? projects : projects.filter(p => p.category === filter);
+
+  // Re-clicking the active tab is a no-op, so it shouldn't count as a filter
+  const selectFilter = (cat: string) => {
+    if (cat === filter) return;
+    track('project_filter', { category: cat });
+    setFilter(cat);
+  };
 
   return (
     <main id="main" className="pt-28 pb-16 min-h-screen" data-keynav-section>
@@ -28,11 +37,16 @@ export function Projects() {
           subtitle="A mix of tools, AR experiences, and web apps."
         />
 
-        <div className="flex gap-2 flex-wrap mb-10" role="tablist" aria-label="Filter projects by category" data-keynav-filter>
+        <div
+          className="flex gap-2 flex-wrap mb-10"
+          role="tablist"
+          aria-label="Filter projects by category"
+          data-keynav-filter
+        >
           {CATEGORIES.map(cat => (
             <button
               key={cat}
-              onClick={() => setFilter(cat)}
+              onClick={() => selectFilter(cat)}
               role="tab"
               aria-selected={filter === cat}
               data-keynav-element
@@ -86,6 +100,13 @@ function ProjectCard({ project }: { project: Project }) {
           href={project.githubUrl}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() =>
+            track('project_source_click', {
+              project: project.title,
+              category: project.category,
+              featured: project.featured,
+            })
+          }
           className="text-[0.8125rem] text-text-muted mt-auto transition-colors duration-200 inline-flex items-center gap-1 hover:text-accent hover:opacity-100"
         >
           <span className="font-mono">$ view source</span> →

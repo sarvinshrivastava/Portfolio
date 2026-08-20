@@ -1,11 +1,27 @@
 import { test, expect, type Page, type Request } from '@playwright/test';
 
 const CACHE_BASE = 'https://notion-cache.vps.sarvinshrivastava.space';
+
+// The database ids live in the environment, same as the app reads them in
+// src/services/notion.ts. playwright.config.ts loads them from the env file
+// before this module is evaluated.
+function requireDbId(name: string): string {
+  const key = `VITE_NOTION_DB_${name}`;
+  const value = process.env[key];
+  if (!value) {
+    throw new Error(
+      `${key} is not set. Playwright loads it via playwright.config.ts; ` +
+        `set it in the env file or export it before running.`,
+    );
+  }
+  return value;
+}
+
 const DB_IDS = {
-  about:      '9ffc9aed7f2444018df81807060aab3e',
-  projects:   'b8891f8b3db247ebb95c59c96431edf9',
-  timeline:   '99ba1a41a3db414cb05fbd8aa352b045',
-  experience: '4766bfa271044631b57314ab6b51ab49',
+  about: requireDbId('ABOUT'),
+  projects: requireDbId('PROJECTS'),
+  timeline: requireDbId('TIMELINE'),
+  experience: requireDbId('EXPERIENCE'),
 };
 
 // Vite proxies /api/database/* to the VPS at the server level, so the browser
@@ -85,8 +101,9 @@ test('My Journey page loads and fetches Timeline from Notion cache', async ({ pa
 
   await expect(page.getByText('$ loading...')).toBeHidden({ timeout: 15_000 });
 
-  // At least one timeline card
-  const cards = page.locator('article');
+  // At least one timeline card. The terminal-chrome redesign replaced the
+  // <article> cards with expandable divs, so match the interactive role.
+  const cards = page.locator('[role="button"][aria-expanded]');
   await expect(cards.first()).toBeVisible({ timeout: 15_000 });
   const count = await cards.count();
   expect(count).toBeGreaterThan(0);

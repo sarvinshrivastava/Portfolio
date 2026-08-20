@@ -1,3 +1,4 @@
+import { trackOnce, type Dataset } from '../lib/analytics';
 import type { About, Project, TimelineEvent, Experience } from '../types';
 
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -31,22 +32,71 @@ function richText(blocks: { plain_text: string }[] | undefined): string {
 
 const CACHE_API = import.meta.env.VITE_NOTION_CACHE_URL ?? '';
 
-const DB_MAP: Record<string, string> = {
-  about:      import.meta.env.VITE_NOTION_DB_ABOUT ?? '',
-  projects:   import.meta.env.VITE_NOTION_DB_PROJECTS ?? '',
-  timeline:   import.meta.env.VITE_NOTION_DB_TIMELINE ?? '',
+const DB_MAP: Record<Dataset, string> = {
+  about: import.meta.env.VITE_NOTION_DB_ABOUT ?? '',
+  projects: import.meta.env.VITE_NOTION_DB_PROJECTS ?? '',
+  timeline: import.meta.env.VITE_NOTION_DB_TIMELINE ?? '',
   experience: import.meta.env.VITE_NOTION_DB_EXPERIENCE ?? '',
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type NotionPage = { id: string; properties: Record<string, any> };
 
-async function notionQuery(page: string): Promise<{ results: NotionPage[] }> {
+/**
+ * Notion hands us URLs an editor typed, and one of them reaches `window.open`
+ * in useKeyboardNav — which, unlike React's `href` handling, does NOT block
+ * `javascript:`. Anything that is not plain http(s) is dropped at the source so
+ * every consumer inherits the check.
+ */
+function safeUrl(value: unknown): string | undefined {
+  if (typeof value !== 'string' || !value) return undefined;
+  try {
+    const { protocol } = new URL(value);
+    return protocol === 'https:' || protocol === 'http:' ? value : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Every failure here reports `data_load_error` before throwing — a dead Notion
+ * cache renders as a silently empty site, which no pageview count would reveal.
+ * Synthetic statuses distinguish the non-HTTP failures: 0 = the DB id is
+ * missing from the build, -1 = the request never reached the cache (offline,
+ * DNS, CORS), -2 = the cache answered 200 with a body that is not JSON.
+ *
+ * Deduped per dataset: with the cache down, one visitor touring four routes
+ * would otherwise emit an event per route and again after every cache lapse.
+ */
+async function notionQuery(page: Dataset): Promise<{ results: NotionPage[] }> {
+  const reportKey = `data_load_error:${page}`;
   const dbId = DB_MAP[page];
-  if (!dbId) throw new Error(`VITE_NOTION_DB_${page.toUpperCase()} is not set — add it to your .env and Netlify environment variables`);
-  const res = await fetch(`${CACHE_API}/api/database/${dbId}`);
-  if (!res.ok) throw new Error(`Notion cache query failed: ${res.status}`);
-  return res.json();
+  if (!dbId) {
+    trackOnce(reportKey, 'data_load_error', { dataset: page, status: 0 });
+    throw new Error(
+      `VITE_NOTION_DB_${page.toUpperCase()} is not set — add it to your .env and Netlify environment variables`,
+    );
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(`${CACHE_API}/api/database/${dbId}`);
+  } catch (err) {
+    trackOnce(reportKey, 'data_load_error', { dataset: page, status: -1 });
+    throw err;
+  }
+
+  if (!res.ok) {
+    trackOnce(reportKey, 'data_load_error', { dataset: page, status: res.status });
+    throw new Error(`Notion cache query failed: ${res.status}`);
+  }
+
+  try {
+    return await res.json();
+  } catch (err) {
+    trackOnce(reportKey, 'data_load_error', { dataset: page, status: -2 });
+    throw err;
+  }
 }
 
 // ── About ──────────────────────────────────────────────────────────────────
@@ -59,13 +109,13 @@ export async function fetchAbout(): Promise<About> {
 
   const data: About = {
     bio: richText(p.Bio?.rich_text),
-    github: p.GitHub?.url ?? undefined,
-    linkedin: p.LinkedIn?.url ?? undefined,
-    x: p.X?.url ?? undefined,
-    medium: p.Medium?.url ?? undefined,
+    github: safeUrl(p.GitHub?.url),
+    linkedin: safeUrl(p.LinkedIn?.url),
+    x: safeUrl(p.X?.url),
+    medium: safeUrl(p.Medium?.url),
     email: p.Email?.email ?? undefined,
     roles: p['Roles']?.multi_select?.map((t: { name: string }) => t.name) ?? [],
-    resumeUrl: p['Resume URL']?.url ?? undefined,
+    resumeUrl: safeUrl(p['Resume URL']?.url),
   };
 
   setCache('notion_about', data);
@@ -87,8 +137,8 @@ export async function fetchProjects(): Promise<Project[]> {
       description: richText(p.Description?.rich_text),
       category: p.Category?.select?.name ?? 'Tools',
       techStack: p['Tech Stack']?.multi_select?.map((t: { name: string }) => t.name) ?? [],
-      githubUrl: p['GitHub URL']?.url ?? undefined,
-      imageUrl: p['Image URL']?.url ?? undefined,
+      githubUrl: safeUrl(p['GitHub URL']?.url),
+      imageUrl: safeUrl(p['Image URL']?.url),
       date: p.Date?.date?.start ?? undefined,
       featured: p.Featured?.checkbox ?? false,
       sortOrder: p['Sort Order']?.number ?? 0,
