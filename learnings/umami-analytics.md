@@ -1,5 +1,7 @@
 # Umami analytics in this portfolio
 
+> **Applies to:** `netlify.toml`, `public/umami.js`, `src/index.css`, `src/lib/analytics.ts`, `src/services/notion.ts`, `tests/notion-cache.spec.ts`, `vite.config.ts`
+
 Self-hosted umami at `https://umami.vps.sarvinshrivastava.space`, website id
 `3ff0e349-cf10-49df-97ab-90ca243b755b`. Custom events go through
 `src/lib/analytics.ts`; nothing calls `window.umami` directly.

@@ -1,5 +1,7 @@
 # `VITE_` env vars are public — they are inlined into the bundle
 
+> **Applies to:** `playwright.config.ts`, `src/services/notion.ts`
+
 ## The mechanism
 
 Vite does a **static text replacement** of `import.meta.env.VITE_*` at build time.
