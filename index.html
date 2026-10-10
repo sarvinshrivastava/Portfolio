@@ -2,12 +2,20 @@
 <html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
+    <!--
+      Blocking on purpose: sets data-theme before first paint so the static shell
+      below (and the app) never flashes the wrong theme. Same-origin, so the CSP
+      script-src 'self' allows it. Mirrors useTheme's initial state.
+    -->
+    <script src="/theme.js"></script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Sarvin Shrivastava — Full-Stack Developer, AR/VR Engineer, AI/ML Enthusiast." />
-    <meta property="og:title" content="Sarvin Shrivastava — Portfolio" />
-    <meta property="og:description" content="Building interfaces, AR experiences, and CLI tools." />
-    <title>Sarvin Shrivastava</title>
+    <!--
+      Title, description, canonical, og:* and JSON-LD are written per route by the
+      `seo` plugin in vite.config.ts (src/seo/site.ts). Do not add them here: a
+      second description tag would ship next to the generated one.
+    -->
+    <!--seo:head-->
     <!--
       Analytics: the umami tracker <script> and its preconnect <link> are injected
       here at build time by the `inject-umami` plugin in vite.config.ts. That plugin
@@ -19,7 +27,7 @@
     -->
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><!--seo:shell--></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

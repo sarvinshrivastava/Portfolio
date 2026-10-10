@@ -74,6 +74,16 @@
     # bare origin, and https -> http gets nothing.
     Referrer-Policy = "strict-origin-when-cross-origin"
 
+# public/theme.js is a render-blocking script with an un-hashed name, so
+# Netlify's default (revalidate on every load) would add a conditional request
+# before first paint on every visit. An hour of staleness after a deploy is
+# harmless: the script only picks dark or light.
+[[headers]]
+  for = "/theme.js"
+
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
