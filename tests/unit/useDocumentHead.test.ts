@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createElement, useEffect } from 'react';
-import { render } from '@testing-library/react';
+import { act, render } from '@testing-library/react';
 import { MemoryRouter, useNavigate } from 'react-router-dom';
 import { useDocumentHead } from '../../src/hooks/useDocumentHead';
 
@@ -36,13 +36,11 @@ beforeEach(() => {
 
 describe('useDocumentHead', () => {
   it('sets the head for the landing route and follows client navigation', async () => {
-    const { rerender } = mount('/projects');
+    mount('/projects');
     expect(document.title).toMatch(/^Projects by Sarvin Shrivastava/);
     expect(canonical()).toBe('https://sarvinshrivastava.space/projects');
 
-    go('/');
-    rerender(createElement(MemoryRouter, { initialEntries: ['/'] }, createElement(Harness)));
-    await Promise.resolve();
+    await act(async () => go('/'));
     expect(document.title).toMatch(/^Sarvin Shrivastava — /);
     expect(canonical()).toBe('https://sarvinshrivastava.space/');
     expect(description()).toMatch(/Habuild Healthtech/);

@@ -45,7 +45,7 @@ export const RECOMMENDATIONS: readonly Recommendation[] = [
   {
     name: 'Chetan Vashistth',
     role: 'Software Developer',
-    relation: 'senior colleague',
+    relation: 'senior to Sarvin',
     date: '2024-08-22',
     text: 'Sarvin has a strong interest in 3D design, VR/AR and related stuff. He has very strong learning capabilities and can learn new things quickly. He takes the ownership, so I recommend him for anything related to AR/VR, 3D, and Metaverse.',
   },
@@ -77,5 +77,8 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 /** '2024-09-20' or '2024-09' → 'Sep 2024'. Pure string math, no Date (no time zone drift). */
 export function monthYear(iso: string): string {
   const [year, month] = iso.split('-');
-  return `${MONTHS[Number(month) - 1]} ${year}`;
+  const name = MONTHS[Number(month) - 1];
+  // Fails the build/tests rather than shipping "undefined 2024" to crawlers.
+  if (!/^\d{4}$/.test(year) || !name) throw new Error(`monthYear: bad date ${iso}`);
+  return `${name} ${year}`;
 }

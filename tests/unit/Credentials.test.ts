@@ -1,12 +1,19 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createElement } from 'react';
 import { render, screen } from '@testing-library/react';
 import { Credentials } from '../../src/components/sections/Credentials';
 import { SectionHeading } from '../../src/components/ui/SectionHeading';
 import { About } from '../../src/components/sections/About';
 import { AboutContext } from '../../src/context/AboutContext';
-import { CERTIFICATIONS, RECOMMENDATIONS } from '../../src/content/profile';
+import { CERTIFICATIONS, RECOMMENDATIONS, monthYear } from '../../src/content/profile';
 import type { About as AboutData } from '../../src/types';
+
+const originalScrollIntoView = Element.prototype.scrollIntoView;
+afterEach(() => {
+  // Restored even when an assertion throws, so one failure cannot cascade.
+  window.history.replaceState(null, '', '/');
+  Element.prototype.scrollIntoView = originalScrollIntoView;
+});
 
 // jsdom has no IntersectionObserver; the reveal animation is irrelevant here.
 // Per test, because the config's `unstubGlobals` resets stubs after each one.
@@ -33,12 +40,21 @@ describe('Credentials', () => {
     expect(figures[0].querySelector('figcaption')!.textContent).toContain('Sep 2024');
   });
 
-  it('lists the 7 certifications with issuer and month', () => {
+  it('lists every certification with issuer and month', () => {
     render(createElement(Credentials));
     const items = screen.getAllByRole('listitem');
     expect(items).toHaveLength(CERTIFICATIONS.length);
-    expect(items[0]).toHaveTextContent('Claude Code in Action');
+    items.forEach((item, i) => {
+      expect(item).toHaveTextContent(CERTIFICATIONS[i].name);
+      expect(item).toHaveTextContent(new RegExp(`· [A-Z][a-z]{2} \\d{4}$`));
+    });
     expect(items[0]).toHaveTextContent('Anthropic · Mar 2026');
+  });
+
+  it('refuses a malformed date instead of rendering "undefined"', () => {
+    expect(() => monthYear('2024')).toThrow(/bad date/);
+    expect(() => monthYear('2024-13')).toThrow(/bad date/);
+    expect(monthYear('2024-09-20')).toBe('Sep 2024');
   });
 });
 
@@ -64,7 +80,6 @@ describe('About hash scroll', () => {
     const data: AboutData = { bio: 'bio', roles: [] };
     rerender(createElement(AboutContext.Provider, { value: data }, createElement(About)));
     expect(scroll).toHaveBeenCalledTimes(1);
-    window.history.replaceState(null, '', '/');
   });
 
   it('does nothing without the hash', () => {

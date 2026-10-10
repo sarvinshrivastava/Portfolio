@@ -22,8 +22,10 @@
     # script-src 'self'
     #   Nothing loads third-party JS any more: the umami tracker is vendored at
     #   public/umami.js and served from this origin (see vite.config.ts). The
-    #   built index.html contains no inline <script>, only module/defer tags
-    #   with src attributes, so no 'unsafe-inline' and no nonces are needed.
+    #   built HTML files contain no inline executable <script>: only src tags
+    #   (module, defer, and the blocking same-origin /theme.js) plus one
+    #   `application/ld+json` block, which is a data block the browser never
+    #   executes and CSP never checks. No 'unsafe-inline' or nonces are needed.
     #
     # style-src 'self' 'unsafe-inline' https://fonts.googleapis.com
     #   fonts.googleapis.com is required: src/index.css starts with

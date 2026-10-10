@@ -47,6 +47,10 @@ describe('seo plugin build output', () => {
       expect(html).toMatch(/<script type="module" crossorigin src="\/assets\/[^"]+\.js">/);
       expect(html).toContain('<script defer src="/umami.js"');
       expect(html).not.toContain('<!--seo:');
+      // Blocking theme script must run before the stylesheet paints anything.
+      const theme = html.indexOf('<script src="/theme.js"></script>');
+      expect(theme).toBeGreaterThan(-1);
+      expect(theme).toBeLessThan(html.indexOf('<link rel="stylesheet"'));
     }
   }, 60_000);
 

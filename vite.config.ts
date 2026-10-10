@@ -1,7 +1,7 @@
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import { SEO_ROUTES, renderRouteHtml, seoRouteFor } from './src/seo/site';
+import { HOME_ROUTE, SEO_ROUTES, renderRouteHtml, seoRouteFor } from './src/seo/site';
 
 /**
  * The tracker is VENDORED at public/umami.js and served from our own origin, so
@@ -100,21 +100,21 @@ function seo(): Plugin {
     transformIndexHtml(html, ctx) {
       if (!ctx.server) return html;
       const pathname = new URL(ctx.originalUrl ?? '/', 'http://localhost').pathname;
-      return renderRouteHtml(html, seoRouteFor(pathname) ?? SEO_ROUTES[0]);
+      return renderRouteHtml(html, seoRouteFor(pathname) ?? HOME_ROUTE);
     },
     generateBundle(_, bundle) {
       const index = bundle['index.html'];
       if (index?.type !== 'asset') this.error('seo: index.html is not in the bundle');
       const template = String(index.source);
       for (const route of SEO_ROUTES) {
-        if (route.file === index.fileName) continue;
+        if (route === HOME_ROUTE) continue;
         this.emitFile({
           type: 'asset',
           fileName: route.file,
           source: renderRouteHtml(template, route),
         });
       }
-      index.source = renderRouteHtml(template, SEO_ROUTES[0]);
+      index.source = renderRouteHtml(template, HOME_ROUTE);
     },
   };
 }

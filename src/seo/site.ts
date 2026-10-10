@@ -26,26 +26,36 @@ interface SectionHeadingCopy {
   subtitle: string;
 }
 
-export interface SeoRoute {
+interface SeoRouteBase {
   path: string;
   /** Emitted file name in dist/. Flat, so Netlify serves /projects without a trailing-slash 301. */
   file: string;
   title: string;
   description: string;
-  shell: 'home' | 'section';
-  /** Page-level SectionHeading copy; mirrors the page component exactly. */
-  heading?: SectionHeadingCopy;
 }
 
+export type SeoRoute = SeoRouteBase &
+  (
+    | { shell: 'home' }
+    | {
+        shell: 'section';
+        /** Page-level SectionHeading copy; mirrors the page component exactly. */
+        heading: SectionHeadingCopy;
+      }
+  );
+
+/** The route whose file is index.html; also the dev and unknown-path fallback. */
+export const HOME_ROUTE: SeoRoute = {
+  path: '/',
+  file: 'index.html',
+  title: 'Sarvin Shrivastava — Full-Stack Developer & AR/VR Engineer',
+  description:
+    'Sarvin Shrivastava: Full-Stack Developer at Habuild Healthtech and AR/VR engineer with published patents, building interfaces, AR experiences and dev tools.',
+  shell: 'home',
+};
+
 export const SEO_ROUTES: readonly SeoRoute[] = [
-  {
-    path: '/',
-    file: 'index.html',
-    title: 'Sarvin Shrivastava — Full-Stack Developer & AR/VR Engineer',
-    description:
-      'Sarvin Shrivastava: Full-Stack Developer at Habuild Healthtech and AR/VR engineer with published patents, building interfaces, AR experiences and dev tools.',
-    shell: 'home',
-  },
+  HOME_ROUTE,
   {
     path: '/projects',
     file: 'projects.html',
@@ -135,7 +145,8 @@ export function jsonLd(r: SeoRoute): string {
       name: c.name,
       credentialCategory: 'certificate',
       recognizedBy: { '@type': 'Organization', name: c.issuer },
-      validFrom: c.date,
+      // CreativeWork's date; schema.org has no issue-date property on this type.
+      dateCreated: c.date,
     })),
   };
   const website = {
@@ -197,8 +208,8 @@ function header(r: SeoRoute): string {
 <a href="/" class="font-mono text-base font-bold text-text tracking-tight hover:opacity-100" aria-label="Sarvin Shrivastava — home"><span class="text-accent">~/</span>sarvin</a>
 <ul class="hidden md:flex list-none gap-8" role="list">${links}</ul>
 <div class="flex items-center gap-4">
-<button type="button" class="bg-transparent border border-border text-text-muted text-base w-9 h-9 rounded cursor-pointer transition-[color,border-color] flex items-center justify-center hover:text-accent hover:border-accent" aria-label="Switch theme">○</button>
-<button type="button" class="flex md:hidden flex-col gap-[5px] bg-transparent border-none cursor-pointer p-1" aria-label="Toggle menu"><span class="block w-[22px] h-0.5 bg-text rounded-sm transition-all"></span><span class="block w-[22px] h-0.5 bg-text rounded-sm transition-all"></span><span class="block w-[22px] h-0.5 bg-text rounded-sm transition-all"></span></button>
+<button type="button" class="bg-transparent border border-border text-text-muted text-base w-9 h-9 rounded cursor-pointer transition-[color,border-color] flex items-center justify-center hover:text-accent hover:border-accent" aria-label="Switch theme"><span class="[[data-theme=light]_&]:hidden">○</span><span class="hidden [[data-theme=light]_&]:inline">●</span></button>
+<button type="button" class="flex md:hidden flex-col gap-[5px] bg-transparent border-none cursor-pointer p-1" aria-expanded="false" aria-label="Toggle menu"><span class="block w-[22px] h-0.5 bg-text rounded-sm transition-all"></span><span class="block w-[22px] h-0.5 bg-text rounded-sm transition-all"></span><span class="block w-[22px] h-0.5 bg-text rounded-sm transition-all"></span></button>
 </div>
 </nav>
 </header>`;
@@ -251,7 +262,7 @@ export function credentialsSection(): string {
   // adds `.revealed`, which would hide from readers what crawlers still read.
   const quotes = RECOMMENDATIONS.map(
     rec => `<figure class="bg-bg-secondary border border-border rounded-lg p-6 flex flex-col gap-4">
-<blockquote class="text-text-muted text-[0.9375rem] leading-[1.7]">“${escapeHtml(rec.text)}”</blockquote>
+<blockquote class="text-text text-[0.9375rem] leading-[1.7]">“${escapeHtml(rec.text)}”</blockquote>
 <figcaption class="font-mono text-[0.8125rem]"><span class="text-text">${escapeHtml(rec.name)}</span><span class="text-text-muted"> — ${escapeHtml(rec.role)}, ${escapeHtml(rec.relation)} · ${monthYear(rec.date)}</span></figcaption>
 </figure>`,
   ).join('\n');
@@ -271,18 +282,24 @@ ${quotes}
 }
 
 function footer(): string {
-  // Footer.tsx, plus a link row visible at every width: the header links are
-  // `hidden md:flex`, so without this a no-JS mobile reader gets no navigation.
-  const nav = [...NAV, { to: '/#about', label: 'About' }]
-    .map(({ to, label }) => `<a href="${to}" class="font-mono">${escapeHtml(label)}</a>`)
-    .join(' · ');
-  const profile = (href: string, label: string) =>
-    `<a href="${href}" target="_blank" rel="noopener noreferrer" class="font-mono">${label}</a>`;
+  // Footer.tsx exactly (about · github · linkedin), plus one extra row. The
+  // header links are `hidden md:flex`, so without the row a no-JS mobile reader
+  // gets no navigation; it also carries the profiles and email crawlers look
+  // for. The footer is below the fold on every route, so the row never shows
+  // during the swap to React.
+  const link = (href: string, label: string, external = false) =>
+    `<a href="${escapeHtml(href)}"${external ? ' target="_blank" rel="noopener noreferrer"' : ''} class="font-mono">${escapeHtml(label)}</a>`;
+  const row = [
+    ...NAV.map(({ to, label }) => link(to, label)),
+    link(PROFILES.x, 'x', true),
+    link(PROFILES.medium, 'medium', true),
+    link(`mailto:${PERSON.email}`, 'email'),
+  ].join(' · ');
   return `<footer class="border-t border-border mt-24 py-8">
 <div class="container flex justify-between items-center flex-wrap gap-2 text-[0.8125rem]">
 <span><span class="text-accent font-mono">~/sarvin</span><span class="text-muted"> — built with React + Vite</span></span>
-<span>${profile(PROFILES.github, 'github')} · ${profile(PROFILES.linkedin, 'linkedin')} · ${profile(PROFILES.x, 'x')} · ${profile(PROFILES.medium, 'medium')} · <a href="mailto:${PERSON.email}" class="font-mono">email</a></span>
-<nav class="w-full flex flex-wrap gap-x-2 text-[0.8125rem]" aria-label="Site pages">${nav}</nav>
+<span>${link('/#about', 'about')} · ${link(PROFILES.github, 'github', true)} · ${link(PROFILES.linkedin, 'linkedin', true)}</span>
+<nav class="w-full" aria-label="Site pages">${row}</nav>
 </div>
 </footer>`;
 }
@@ -291,7 +308,7 @@ export function renderShell(r: SeoRoute): string {
   const main =
     r.shell === 'home'
       ? `<main>\n${hero()}\n${credentialsSection()}\n</main>`
-      : `<main class="pt-28 pb-16 min-h-screen">\n<div class="container">\n${sectionHeading(r.heading!, 'h1')}\n</div>\n</main>`;
+      : `<main class="pt-28 pb-16 min-h-screen">\n<div class="container">\n${sectionHeading(r.heading, 'h1')}\n</div>\n</main>`;
   return `${header(r)}\n${main}\n${footer()}`;
 }
 

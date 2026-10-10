@@ -11,7 +11,7 @@ import {
   seoRouteFor,
   type SeoRoute,
 } from '../../src/seo/site';
-import { PROFILES } from '../../src/content/profile';
+import { CERTIFICATIONS, PROFILES } from '../../src/content/profile';
 
 /**
  * Contract tests for the build-time SEO output. geo.new and AI crawlers only
@@ -103,7 +103,8 @@ describe.each(SEO_ROUTES)('$path rendered html', r => {
   it('keeps the footer link row visible at every width', () => {
     const footerNav = root.querySelector('footer nav')!;
     expect(footerNav.className).not.toMatch(/\bhidden\b/);
-    expect(footerNav.querySelectorAll('a').length).toBe(5);
+    // 4 routes + x, medium, email
+    expect(footerNav.querySelectorAll('a').length).toBe(7);
   });
 
   it('emits a linked JSON-LD graph', () => {
@@ -115,7 +116,7 @@ describe.each(SEO_ROUTES)('$path rendered html', r => {
     expect(person['@id']).toBe(PERSON_ID);
     expect(person.sameAs).toEqual(Object.values(PROFILES));
     expect((person.contactPoint as Record<string, string>).contactType).toBeTruthy();
-    expect(person.hasCredential).toHaveLength(7);
+    expect(person.hasCredential).toHaveLength(CERTIFICATIONS.length);
     expect(page['@id']).toBe(`${canonicalUrl(r)}#webpage`);
     expect(page.isPartOf).toEqual({ '@id': WEBSITE_ID });
     expect(page.about).toEqual({ '@id': PERSON_ID });
@@ -124,7 +125,25 @@ describe.each(SEO_ROUTES)('$path rendered html', r => {
     } else {
       expect(site).toBeUndefined();
     }
-    for (const n of nodes) expect(String(n['@id'])).toMatch(new RegExp(`^${SITE_URL}/`));
+    for (const n of nodes) expect(String(n['@id']).startsWith(`${SITE_URL}/`)).toBe(true);
+  });
+});
+
+describe('shell mirrors the components it replaces', () => {
+  const root = parse(home).getElementById('root')!;
+
+  it('footer first row is exactly the React Footer: about · github · linkedin', () => {
+    const span = root.querySelector('footer > div > span:nth-of-type(2)')!;
+    expect([...span.querySelectorAll('a')].map(a => a.getAttribute('href'))).toEqual([
+      '/#about',
+      PROFILES.github,
+      PROFILES.linkedin,
+    ]);
+  });
+
+  it('theme toggle carries both glyphs so theme.js picks the right one', () => {
+    const button = root.querySelector('button[aria-label="Switch theme"]')!;
+    expect(button.textContent).toBe('○●');
   });
 });
 

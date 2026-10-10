@@ -28,7 +28,7 @@ export function Credentials() {
               key={rec.name}
               className="bg-bg-secondary border border-border rounded-lg p-6 flex flex-col gap-4"
             >
-              <blockquote className="text-text-muted text-[0.9375rem] leading-[1.7]">
+              <blockquote className="text-text text-[0.9375rem] leading-[1.7]">
                 “{rec.text}”
               </blockquote>
               <figcaption className="font-mono text-[0.8125rem]">
