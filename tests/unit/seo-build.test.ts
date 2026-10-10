@@ -1,10 +1,12 @@
 // @vitest-environment node
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 import { build } from 'vite';
 import { SEO_ROUTES, canonicalUrl } from '../../src/seo/site';
+import { assertThemeHash } from '../../scripts/csp';
+import { seo } from '../../vite.config';
 
 /**
  * Runs the real production build and checks what the seo plugin wrote. The
@@ -18,6 +20,7 @@ import { SEO_ROUTES, canonicalUrl } from '../../src/seo/site';
  */
 
 const root = resolve(__dirname, '../..');
+const toml = readFileSync(resolve(root, 'netlify.toml'), 'utf8');
 const outDirs: string[] = [];
 
 async function buildTo(context?: string): Promise<(file: string) => string> {
@@ -47,16 +50,36 @@ describe('seo plugin build output', () => {
       expect(html).toMatch(/<script type="module" crossorigin src="\/assets\/[^"]+\.js">/);
       expect(html).toContain('<script defer src="/umami.js"');
       expect(html).not.toContain('<!--seo:');
-      // Blocking theme script must run before the stylesheet paints anything.
-      const theme = html.indexOf('<script src="/theme.js"></script>');
-      expect(theme).toBeGreaterThan(-1);
-      expect(theme).toBeLessThan(html.indexOf('<link rel="stylesheet"'));
-      // CSP is script-src 'self' with no 'unsafe-inline' (netlify.toml): the only
-      // <script> without a src may be the non-executed JSON-LD data block.
+      // The theme script is the first script in the file and runs before the
+      // stylesheet paints anything.
       const markup = html.replace(/<!--[\s\S]*?-->/g, ''); // comments mention "<script>"
+      expect(markup.indexOf('<script')).toBe(markup.indexOf('<script>'));
+      expect(markup.indexOf('<script>')).toBeLessThan(markup.indexOf('<link rel="stylesheet"'));
+      // CSP has no 'unsafe-inline': the only scripts without a src are the
+      // hashed theme script and the non-executed JSON-LD data block, and the
+      // hash in netlify.toml matches this file's bytes exactly.
       const inline = [...markup.matchAll(/<script(?![^>]*\ssrc=)([^>]*)>/g)].map(m => m[1].trim());
-      expect(inline).toEqual(['type="application/ld+json"']);
+      expect(inline.sort()).toEqual(['', 'type="application/ld+json"']);
+      expect(() => assertThemeHash(html, toml)).not.toThrow();
     }
+    expect(() => read('theme.js')).toThrow(/ENOENT/);
+  }, 60_000);
+
+  it('fails the build when netlify.toml carries a stale theme hash', async () => {
+    // Netlify runs only `bun run build`, so this is the guard that matters.
+    const outDir = mkdtempSync(join(tmpdir(), 'seo-build-'));
+    outDirs.push(outDir);
+    const stale = join(outDir, 'netlify.toml');
+    writeFileSync(stale, toml.replace(/'sha256-[A-Za-z0-9+/]+=*'/, "'sha256-stale='"));
+    await expect(
+      build({
+        root,
+        configFile: false,
+        logLevel: 'silent',
+        plugins: [seo({ netlifyToml: stale })],
+        build: { outDir: join(outDir, 'dist'), emptyOutDir: true },
+      }),
+    ).rejects.toThrow(/csp: netlify.toml script-src is .* but the inline theme script needs/);
   }, 60_000);
 
   it('keeps umami out of every route file on preview deploys', async () => {

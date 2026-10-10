@@ -2,12 +2,27 @@
 <html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      (function () {
+        var theme;
+        try {
+          theme = localStorage.getItem('theme');
+        } catch (e) {
+          // localStorage unavailable (private browsing with strict settings)
+        }
+        if (theme !== 'dark' && theme !== 'light') {
+          theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
     <!--
-      Blocking on purpose: sets data-theme before first paint so the static shell
-      below (and the app) never flashes the wrong theme. Same-origin, so the CSP
-      script-src 'self' allows it. Mirrors useTheme's initial state.
+      The script above is inline on purpose: it sets data-theme before first paint
+      (no flash), and an external file would be a render-blocking request. CSP
+      allows it by hash, not 'unsafe-inline'. Editing even its whitespace changes
+      the hash: the build then fails and prints the script-src to paste into
+      netlify.toml (scripts/csp.ts). Keep it in step with src/hooks/useTheme.ts.
     -->
-    <script src="/theme.js"></script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!--

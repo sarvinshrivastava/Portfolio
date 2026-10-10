@@ -19,13 +19,15 @@
   [headers.values]
     # default-src is the fallback for anything not named explicitly below.
     #
-    # script-src 'self'
-    #   Nothing loads third-party JS any more: the umami tracker is vendored at
-    #   public/umami.js and served from this origin (see vite.config.ts). The
-    #   built HTML files contain no inline executable <script>: only src tags
-    #   (module, defer, and the blocking same-origin /theme.js) plus one
-    #   `application/ld+json` block, which is a data block the browser never
-    #   executes and CSP never checks. No 'unsafe-inline' or nonces are needed.
+    # script-src 'self' 'sha256-…'
+    #   Nothing loads third-party JS: the umami tracker is vendored at
+    #   public/umami.js and served from this origin (see vite.config.ts).
+    #   The one inline executable script is the theme script at the top of
+    #   index.html, allowed by its exact hash, never by 'unsafe-inline'. Any edit
+    #   to it (even whitespace) changes the hash; the build fails and prints the
+    #   value to paste here (scripts/csp.ts, called from the seo plugin). The
+    #   `application/ld+json` blocks are data the browser never executes, so
+    #   CSP does not check them.
     #
     # style-src 'self' 'unsafe-inline' https://fonts.googleapis.com
     #   fonts.googleapis.com is required: src/index.css starts with
@@ -66,7 +68,7 @@
     # base-uri 'self'         — an injected <base> can't re-point relative URLs.
     # form-action 'self'      — the contact form submits over fetch, never a
     #                           native form POST to a third party.
-    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://umami.vps.sarvinshrivastava.space https://notion-cache.vps.sarvinshrivastava.space https://api.emailjs.com; frame-ancestors 'none'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'sha256-bNUrCuaq6Aj0UyYhmeNaThGCWsd98SvPW81BV+3pReE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://umami.vps.sarvinshrivastava.space https://notion-cache.vps.sarvinshrivastava.space https://api.emailjs.com; frame-ancestors 'none'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
 
     # Stop the browser from second-guessing a declared Content-Type (an upload
     # served as text/plain must never be sniffed into executable script).
@@ -75,16 +77,6 @@
     # Send the full URL only to same-origin requests; cross-origin gets the
     # bare origin, and https -> http gets nothing.
     Referrer-Policy = "strict-origin-when-cross-origin"
-
-# public/theme.js is a render-blocking script with an un-hashed name, so
-# Netlify's default (revalidate on every load) would add a conditional request
-# before first paint on every visit. An hour of staleness after a deploy is
-# harmless: the script only picks dark or light.
-[[headers]]
-  for = "/theme.js"
-
-  [headers.values]
-    Cache-Control = "public, max-age=3600"
 
 [[redirects]]
   from = "/*"

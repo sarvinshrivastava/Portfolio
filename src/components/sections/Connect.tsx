@@ -1,44 +1,9 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import emailjs from '@emailjs/browser';
 import { SectionHeading } from '../ui/SectionHeading';
-import { track, trackOnce, trackSocial, type SocialNetwork } from '../../lib/analytics';
-import { PERSON, PROFILES } from '../../content/profile';
-
-interface Contact {
-  network: SocialNetwork;
-  label: string;
-  href: string;
-  text: string;
-  external: boolean;
-}
-
-/**
- * The aside's reach-me links, from the shared static profile (also used by the
- * build-time SEO output). Footer/About read `useAbout()` first and fall back to it.
- */
-const CONTACTS: Contact[] = [
-  {
-    network: 'email',
-    label: 'email',
-    href: `mailto:${PERSON.email}`,
-    text: PERSON.email,
-    external: false,
-  },
-  {
-    network: 'github',
-    label: 'github',
-    href: PROFILES.github,
-    text: 'sarvinshrivastava',
-    external: true,
-  },
-  {
-    network: 'linkedin',
-    label: 'linkedin',
-    href: PROFILES.linkedin,
-    text: 'sarvin-shrivastava-493b20176',
-    external: true,
-  },
-];
+import { track, trackOnce, trackSocial } from '../../lib/analytics';
+import { useHashScroll } from '../../hooks/useHashScroll';
+import { CONNECT_HEADING, CONTACTS } from '../../content/profile';
 
 interface FormErrors {
   name?: string;
@@ -107,6 +72,8 @@ function sendErrorReason(err: unknown): string {
 }
 
 export function Connect() {
+  const ref = useRef<HTMLElement>(null);
+  useHashScroll(ref, '#connect');
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<FormTouched>({
@@ -178,13 +145,9 @@ export function Connect() {
     `${baseInput} ${touched[field] && errors[field] ? 'border-red-500 focus:border-red-500' : 'border-border focus:border-accent'}`;
 
   return (
-    <section id="connect" className="py-24" aria-label="Contact" data-keynav-section>
+    <section ref={ref} id="connect" className="py-24" aria-label="Contact" data-keynav-section>
       <div className="container">
-        <SectionHeading
-          prefix="## connect"
-          title="Get In Touch"
-          subtitle="Have a project in mind, or just want to say hi? Drop a message."
-        />
+        <SectionHeading {...CONNECT_HEADING} />
 
         <div className="grid grid-cols-[1fr_320px] gap-16 items-start max-[900px]:grid-cols-1 max-[900px]:gap-12">
           <form className="flex flex-col gap-5" onSubmit={handleSubmit} noValidate>

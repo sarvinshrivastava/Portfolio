@@ -1,7 +1,12 @@
 import { useScrollReveal } from '../../hooks/useScrollReveal';
+import { useHashScroll } from '../../hooks/useHashScroll';
 import { SectionHeading } from '../ui/SectionHeading';
-import { CERTIFICATIONS, RECOMMENDATIONS, monthYear } from '../../content/profile';
-import { CREDENTIALS_HEADING } from '../../seo/site';
+import {
+  CERTIFICATIONS,
+  CREDENTIALS_HEADING,
+  RECOMMENDATIONS,
+  monthYear,
+} from '../../content/profile';
 
 /**
  * Recommendations and certifications. The static shell renders the same
@@ -10,6 +15,7 @@ import { CREDENTIALS_HEADING } from '../../seo/site';
  */
 export function Credentials() {
   const ref = useScrollReveal<HTMLElement>();
+  useHashScroll(ref, '#credentials');
 
   return (
     <section

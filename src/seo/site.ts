@@ -1,4 +1,17 @@
-import { CERTIFICATIONS, PERSON, PROFILES, RECOMMENDATIONS, monthYear } from '../content/profile';
+import {
+  ABOUT_HEADING,
+  CERTIFICATIONS,
+  CONNECT_HEADING,
+  CONTACTS,
+  CREDENTIALS_HEADING,
+  PERSON,
+  PROFILES,
+  RECOMMENDATIONS,
+  STATIC_ABOUT,
+  aboutSocialLinks,
+  monthYear,
+  type HeadingCopy,
+} from '../content/profile';
 
 /**
  * Build-time SEO for a client-rendered SPA.
@@ -9,7 +22,8 @@ import { CERTIFICATIONS, PERSON, PROFILES, RECOMMENDATIONS, monthYear } from '..
  * its own head tags, JSON-LD and a static shell inside #root. `createRoot`
  * clears that shell on its first commit, so the shell must mirror each route's
  * real first paint or the swap is visible. Keep its class strings in step with
- * Navbar, Hero, Footer, SectionHeading and Credentials.
+ * Navbar, Hero, About, Credentials, Connect, Footer and SectionHeading; copy
+ * and links come from src/content/profile.ts, shared with those components.
  *
  * Pure strings only: this module is imported by vite.config.ts at build time and
  * by the app at runtime (useDocumentHead), so no DOM and no React.
@@ -19,12 +33,6 @@ export const SITE_URL = PERSON.url;
 export const PERSON_ID = `${SITE_URL}/#person`;
 export const WEBSITE_ID = `${SITE_URL}/#website`;
 const IMAGE_URL = `${SITE_URL}${PERSON.image}`;
-
-interface SectionHeadingCopy {
-  prefix: string;
-  title: string;
-  subtitle: string;
-}
 
 interface SeoRouteBase {
   path: string;
@@ -40,7 +48,7 @@ export type SeoRoute = SeoRouteBase &
     | {
         shell: 'section';
         /** Page-level SectionHeading copy; mirrors the page component exactly. */
-        heading: SectionHeadingCopy;
+        heading: Required<HeadingCopy>;
       }
   );
 
@@ -50,7 +58,7 @@ export const HOME_ROUTE: SeoRoute = {
   file: 'index.html',
   title: 'Sarvin Shrivastava — Full-Stack Developer & AR/VR Engineer',
   description:
-    'Sarvin Shrivastava: Full-Stack Developer at Habuild Healthtech and AR/VR engineer with published patents, building interfaces, AR experiences and dev tools.',
+    'Sarvin Shrivastava: Full-Stack Developer at Habuild Healthtech and AR/VR engineer with published patents, building interfaces and AR experiences.',
   shell: 'home',
 };
 
@@ -61,7 +69,7 @@ export const SEO_ROUTES: readonly SeoRoute[] = [
     file: 'projects.html',
     title: 'Projects by Sarvin Shrivastava — Tools, AR and Web Apps',
     description:
-      "What I've Built: a mix of tools, AR experiences, and web apps by Sarvin Shrivastava, a Full-Stack Developer and AR/VR engineer at Habuild Healthtech.",
+      "What I've Built: tools, AR experiences, and web apps by Sarvin Shrivastava, a Full-Stack Developer and AR/VR engineer at Habuild Healthtech.",
     shell: 'section',
     heading: {
       prefix: '## projects',
@@ -87,7 +95,7 @@ export const SEO_ROUTES: readonly SeoRoute[] = [
     file: 'my-journey.html',
     title: 'My Journey — Sarvin Shrivastava, Milestones and Education',
     description:
-      'The Story So Far: milestones, education, and the moments that shaped Sarvin Shrivastava, from a B.Tech in Computer Science at KIET to Habuild Healthtech.',
+      'The Story So Far: milestones, education, and moments that shaped Sarvin Shrivastava, from a B.Tech at KIET to Habuild Healthtech.',
     shell: 'section',
     heading: {
       prefix: '## my-journey',
@@ -127,6 +135,11 @@ export function escapeHtml(s: string): string {
     .replace(/'/g, '&#39;');
 }
 
+/** The page's visible h1, which is what WebPage.name must match. */
+export function headingText(r: SeoRoute): string {
+  return r.shell === 'home' ? PERSON.name : r.heading.title;
+}
+
 export function jsonLd(r: SeoRoute): string {
   const canonical = canonicalUrl(r);
   const person = {
@@ -160,12 +173,23 @@ export function jsonLd(r: SeoRoute): string {
     '@type': 'WebPage',
     '@id': `${canonical}#webpage`,
     url: canonical,
-    name: r.title,
+    name: headingText(r),
     description: r.description,
     isPartOf: { '@id': WEBSITE_ID },
     about: { '@id': PERSON_ID },
   };
-  const graph = r.path === '/' ? [person, website, webpage] : [person, webpage];
+  // The recommendations are visible only on the home page, so their markup is
+  // too. No reviewRating: they are quotes, not scores.
+  const reviews = RECOMMENDATIONS.map((rec, i) => ({
+    '@type': 'Review',
+    '@id': `${SITE_URL}/#review-${i + 1}`,
+    itemReviewed: { '@id': PERSON_ID },
+    author: { '@type': 'Person', name: rec.name },
+    reviewBody: rec.text,
+    datePublished: rec.date,
+  }));
+  const graph =
+    r.path === '/' ? [person, website, webpage, ...reviews] : [person, webpage];
   // `<` escaped so no string value can close the <script> data block early.
   return JSON.stringify({ '@context': 'https://schema.org', '@graph': graph }).replace(
     /</g,
@@ -215,13 +239,64 @@ function header(r: SeoRoute): string {
 </header>`;
 }
 
-function sectionHeading(h: SectionHeadingCopy, level: 'h1' | 'h2'): string {
-  // SectionHeading.tsx
+function sectionHeading(h: HeadingCopy, level: 'h1' | 'h2'): string {
+  // SectionHeading.tsx; the subtitle line only when there is one, as there.
+  const subtitle = h.subtitle
+    ? `\n<p class="mt-3 text-[0.9375rem] text-text-muted max-w-[540px]">${escapeHtml(h.subtitle)}</p>`
+    : '';
   return `<div class="mb-12">
 <p class="font-mono text-[0.8125rem] text-accent mb-2 tracking-[0.04em]">${escapeHtml(h.prefix)}</p>
-<${level} class="font-mono text-[clamp(1.75rem,4vw,2.5rem)] font-bold text-text leading-[1.15] tracking-[-0.03em]">${escapeHtml(h.title)}</${level}>
-<p class="mt-3 text-[0.9375rem] text-text-muted max-w-[540px]">${escapeHtml(h.subtitle)}</p>
+<${level} class="font-mono text-[clamp(1.75rem,4vw,2.5rem)] font-bold text-text leading-[1.15] tracking-[-0.03em]">${escapeHtml(h.title)}</${level}>${subtitle}
 </div>`;
+}
+
+/** `target`/`rel` for links that leave the site, matching the components. */
+function externalAttrs(external: boolean): string {
+  return external ? ' target="_blank" rel="noopener noreferrer"' : '';
+}
+
+export function aboutSection(): string {
+  // About.tsx with STATIC_ABOUT (its first paint), minus `reveal-section`.
+  const links = aboutSocialLinks(STATIC_ABOUT)
+    .map(
+      l =>
+        `<a href="${escapeHtml(l.href)}"${externalAttrs(l.external)} class="flex items-center gap-3 px-3 py-2 border border-border rounded text-[0.8125rem] text-text-muted transition-all duration-200 hover:opacity-100 hover:text-text hover:border-accent hover:bg-accent-dim"><span class="font-mono text-accent text-xs min-w-[70px]">${escapeHtml(l.prefix)}</span><span>${escapeHtml(l.label)}</span></a>`,
+    )
+    .join('');
+  return `<section id="about" class="py-24" aria-label="About me">
+<div class="container">
+${sectionHeading(ABOUT_HEADING, 'h2')}
+<div class="grid grid-cols-[360px_1fr] gap-16 items-start max-[900px]:grid-cols-1 max-[900px]:gap-10">
+<div class="flex flex-col gap-6 max-[900px]:max-w-[320px]">
+<img src="${escapeHtml(PERSON.image)}" alt="${escapeHtml(PERSON.name)}" class="w-full aspect-square object-cover object-top rounded-md border border-border grayscale-[20%]" />
+<div class="flex flex-col gap-2">${links}</div>
+</div>
+<div class="flex flex-col gap-8 pt-2">
+<p class="text-[1.0625rem] leading-[1.8] text-text">${escapeHtml(STATIC_ABOUT.bio)}</p>
+</div>
+</div>
+</div>
+</section>`;
+}
+
+export function connectSection(): string {
+  // Connect.tsx without the form, which is interactive and holds no content.
+  // Its grid cell stays as an empty div so the aside keeps the 320px column.
+  const contacts = CONTACTS.map(
+    c => `<li class="flex flex-col gap-[0.2rem]"><span class="text-accent font-mono text-xs">${escapeHtml(c.label)}</span><a href="${escapeHtml(c.href)}"${externalAttrs(c.external)} class="text-text hover:text-accent hover:opacity-100 text-[0.9rem]">${escapeHtml(c.text)}</a></li>`,
+  ).join('');
+  return `<section id="connect" class="py-24" aria-label="Contact">
+<div class="container">
+${sectionHeading(CONNECT_HEADING, 'h2')}
+<div class="grid grid-cols-[1fr_320px] gap-16 items-start max-[900px]:grid-cols-1 max-[900px]:gap-12">
+<div></div>
+<aside class="pt-1">
+<p class="font-mono text-xs text-text-muted mb-5"># or reach me at</p>
+<ul class="list-none flex flex-col gap-4">${contacts}</ul>
+</aside>
+</div>
+</div>
+</section>`;
 }
 
 function hero(): string {
@@ -250,13 +325,6 @@ function hero(): string {
 </section>`;
 }
 
-/** Shared with Credentials.tsx so the shell and the component cannot drift. */
-export const CREDENTIALS_HEADING: SectionHeadingCopy = {
-  prefix: '## endorsements',
-  title: 'What Others Say',
-  subtitle: "Recommendations from people I've worked with, and certifications I've earned.",
-};
-
 export function credentialsSection(): string {
   // Credentials.tsx, minus `reveal-section`: that class is opacity 0 until JS
   // adds `.revealed`, which would hide from readers what crawlers still read.
@@ -269,7 +337,7 @@ export function credentialsSection(): string {
   const certs = CERTIFICATIONS.map(
     c => `<li class="flex flex-col gap-1"><span class="text-text text-[0.9375rem]">${escapeHtml(c.name)}</span><span class="font-mono text-xs text-text-muted">${escapeHtml(c.issuer)} · ${monthYear(c.date)}</span></li>`,
   ).join('');
-  return `<section class="py-24" aria-label="Recommendations and certifications">
+  return `<section id="credentials" class="py-24" aria-label="Recommendations and certifications">
 <div class="container">
 ${sectionHeading(CREDENTIALS_HEADING, 'h2')}
 <div class="grid grid-cols-2 gap-6 max-[900px]:grid-cols-1">
@@ -305,11 +373,16 @@ function footer(): string {
 }
 
 export function renderShell(r: SeoRoute): string {
+  // Same order as Home.tsx, and the same ids, so fragment links resolve
+  // before React mounts. createRoot replaces these nodes in one commit, so the
+  // ids never exist twice.
   const main =
     r.shell === 'home'
-      ? `<main>\n${hero()}\n${credentialsSection()}\n</main>`
-      : `<main class="pt-28 pb-16 min-h-screen">\n<div class="container">\n${sectionHeading(r.heading, 'h1')}\n</div>\n</main>`;
-  return `${header(r)}\n${main}\n${footer()}`;
+      ? `<main id="main">\n${hero()}\n${aboutSection()}\n${credentialsSection()}\n${connectSection()}\n</main>`
+      : `<main id="main" class="pt-28 pb-16 min-h-screen">\n<div class="container">\n${sectionHeading(r.heading, 'h1')}\n</div>\n</main>`;
+  // App.tsx: the skip link is the first focusable element.
+  const skip = '<a href="#main" class="skip-to-content">Skip to content</a>';
+  return `${skip}\n${header(r)}\n${main}\n${footer()}`;
 }
 
 export const HEAD_MARKER = '<!--seo:head-->';

@@ -12,7 +12,7 @@ import {
   seoRouteFor,
   type SeoRoute,
 } from '../../src/seo/site';
-import { CERTIFICATIONS, PROFILES } from '../../src/content/profile';
+import { CERTIFICATIONS, PROFILES, RECOMMENDATIONS } from '../../src/content/profile';
 
 /**
  * Contract tests for the build-time SEO output. geo.new and AI crawlers only
@@ -38,11 +38,12 @@ function graph(doc: Document): Record<string, unknown>[] {
 const home = HOME_ROUTE;
 
 describe('route table', () => {
-  it.each(SEO_ROUTES)('$path: title 30–70 and description 120–160 chars', r => {
+  // geo.new measured 156 chars at 977px (≈6.26 px/char) as too wide; 145 ≈ 908px.
+  it.each(SEO_ROUTES)('$path: title 30–70 and description 120–145 chars', r => {
     expect(r.title.length).toBeGreaterThanOrEqual(30);
     expect(r.title.length).toBeLessThanOrEqual(70);
     expect(r.description.length).toBeGreaterThanOrEqual(120);
-    expect(r.description.length).toBeLessThanOrEqual(160);
+    expect(r.description.length).toBeLessThanOrEqual(145);
   });
 
   it('builds canonicals on the production origin', () => {
@@ -106,6 +107,19 @@ describe.each(SEO_ROUTES)('$path rendered html', r => {
     expect(footerNav.className).not.toMatch(/\bhidden\b/);
     // every route, plus x, medium and email
     expect(footerNav.querySelectorAll('a').length).toBe(SEO_ROUTES.length + 3);
+  });
+
+  it('starts with the skip link to #main', () => {
+    const first = root.querySelector('a')!;
+    expect(first.getAttribute('href')).toBe('#main');
+    expect(first.className).toBe('skip-to-content');
+    expect(root.querySelectorAll('#main')).toHaveLength(1);
+    expect(root.querySelector('main')!.id).toBe('main');
+  });
+
+  it('names the WebPage after the visible h1', () => {
+    const page = graph(doc).find(n => n['@type'] === 'WebPage')!;
+    expect(page.name).toBe(root.querySelector('h1')!.textContent);
   });
 
   it('emits a linked JSON-LD graph', () => {
@@ -172,6 +186,39 @@ describe('shell mirrors the components it replaces', () => {
 });
 
 describe('home shell', () => {
+  const homeRoot = parse(home).getElementById('root')!;
+
+  it('has the sections of Home.tsx, in order, with their fragment ids', () => {
+    const ids = [...homeRoot.querySelectorAll('main > section')].map(s => s.id);
+    expect(ids).toEqual(['', 'about', 'credentials', 'connect']);
+    for (const id of ['about', 'credentials', 'connect']) {
+      expect(homeRoot.querySelectorAll(`#${id}`)).toHaveLength(1);
+    }
+    // Every same-page fragment link resolves inside the served HTML.
+    for (const a of homeRoot.querySelectorAll('a[href^="/#"], a[href^="#"]')) {
+      const id = a.getAttribute('href')!.split('#')[1];
+      expect(homeRoot.querySelector(`#${id}`), id).not.toBeNull();
+    }
+  });
+
+  it('marks up the recommendations as Reviews, on the home page only', () => {
+    const reviews = graph(parse(home)).filter(n => n['@type'] === 'Review');
+    expect(reviews).toHaveLength(RECOMMENDATIONS.length);
+    reviews.forEach((r, i) => {
+      expect(r).toEqual({
+        '@type': 'Review',
+        '@id': `${SITE_URL}/#review-${i + 1}`,
+        itemReviewed: { '@id': PERSON_ID },
+        author: { '@type': 'Person', name: RECOMMENDATIONS[i].name },
+        reviewBody: RECOMMENDATIONS[i].text,
+        datePublished: RECOMMENDATIONS[i].date,
+      });
+    });
+    for (const r of SEO_ROUTES.filter(r => r !== home)) {
+      expect(graph(parse(r)).some(n => n['@type'] === 'Review')).toBe(false);
+    }
+  });
+
   it('shows the trust signals without the opacity-0 reveal class', () => {
     const root = parse(home).getElementById('root')!;
     expect(root.querySelectorAll('figure > blockquote')).toHaveLength(2);
