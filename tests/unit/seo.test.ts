@@ -103,8 +103,8 @@ describe.each(SEO_ROUTES)('$path rendered html', r => {
   it('keeps the footer link row visible at every width', () => {
     const footerNav = root.querySelector('footer nav')!;
     expect(footerNav.className).not.toMatch(/\bhidden\b/);
-    // 4 routes + x, medium, email
-    expect(footerNav.querySelectorAll('a').length).toBe(7);
+    // every route, plus x, medium and email
+    expect(footerNav.querySelectorAll('a').length).toBe(SEO_ROUTES.length + 3);
   });
 
   it('emits a linked JSON-LD graph', () => {
@@ -116,7 +116,12 @@ describe.each(SEO_ROUTES)('$path rendered html', r => {
     expect(person['@id']).toBe(PERSON_ID);
     expect(person.sameAs).toEqual(Object.values(PROFILES));
     expect((person.contactPoint as Record<string, string>).contactType).toBeTruthy();
-    expect(person.hasCredential).toHaveLength(CERTIFICATIONS.length);
+    const credentials = person.hasCredential as Record<string, unknown>[];
+    expect(credentials).toHaveLength(CERTIFICATIONS.length);
+    credentials.forEach((c, i) => {
+      expect(c.dateCreated).toBe(CERTIFICATIONS[i].date);
+      expect(c).not.toHaveProperty('validFrom');
+    });
     expect(page['@id']).toBe(`${canonicalUrl(r)}#webpage`);
     expect(page.isPartOf).toEqual({ '@id': WEBSITE_ID });
     expect(page.about).toEqual({ '@id': PERSON_ID });
@@ -141,9 +146,27 @@ describe('shell mirrors the components it replaces', () => {
     ]);
   });
 
-  it('theme toggle carries both glyphs so theme.js picks the right one', () => {
-    const button = root.querySelector('button[aria-label="Switch theme"]')!;
-    expect(button.textContent).toBe('○●');
+  it('theme toggle shows Navbar\'s glyph for whichever theme theme.js set', () => {
+    // Navbar renders ○ in dark and ● in light; the shell picks with a CSS variant.
+    const [dark, light] = root.querySelectorAll('button[aria-label="Switch theme"] > span');
+    expect(dark.textContent).toBe('○');
+    expect([...dark.classList]).toEqual(['[[data-theme=light]_&]:hidden']);
+    expect(light.textContent).toBe('●');
+    expect([...light.classList]).toEqual(['hidden', '[[data-theme=light]_&]:inline']);
+  });
+
+  it('menu button reports collapsed, like Navbar', () => {
+    expect(root.querySelector('button[aria-label="Toggle menu"]')!.getAttribute('aria-expanded')).toBe(
+      'false',
+    );
+  });
+
+  it('opens external profile links in a new tab, internal ones in place', () => {
+    for (const a of root.querySelectorAll('footer a')) {
+      const external = a.getAttribute('href')!.startsWith('https://');
+      expect(a.getAttribute('target'), a.getAttribute('href')!).toBe(external ? '_blank' : null);
+      if (external) expect(a.getAttribute('rel')).toBe('noopener noreferrer');
+    }
   });
 });
 

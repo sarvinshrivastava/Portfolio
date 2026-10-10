@@ -105,6 +105,9 @@ function seo(): Plugin {
     generateBundle(_, bundle) {
       const index = bundle['index.html'];
       if (index?.type !== 'asset') this.error('seo: index.html is not in the bundle');
+      if (HOME_ROUTE.file !== index.fileName) {
+        this.error(`seo: HOME_ROUTE.file is ${HOME_ROUTE.file}, bundle has ${index.fileName}`);
+      }
       const template = String(index.source);
       for (const route of SEO_ROUTES) {
         if (route === HOME_ROUTE) continue;

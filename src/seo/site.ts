@@ -145,7 +145,7 @@ export function jsonLd(r: SeoRoute): string {
       name: c.name,
       credentialCategory: 'certificate',
       recognizedBy: { '@type': 'Organization', name: c.issuer },
-      // CreativeWork's date; schema.org has no issue-date property on this type.
+      // Inherited from CreativeWork. Not `validFrom`: that is not a property of this type.
       dateCreated: c.date,
     })),
   };

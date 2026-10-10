@@ -51,6 +51,11 @@ describe('seo plugin build output', () => {
       const theme = html.indexOf('<script src="/theme.js"></script>');
       expect(theme).toBeGreaterThan(-1);
       expect(theme).toBeLessThan(html.indexOf('<link rel="stylesheet"'));
+      // CSP is script-src 'self' with no 'unsafe-inline' (netlify.toml): the only
+      // <script> without a src may be the non-executed JSON-LD data block.
+      const markup = html.replace(/<!--[\s\S]*?-->/g, ''); // comments mention "<script>"
+      const inline = [...markup.matchAll(/<script(?![^>]*\ssrc=)([^>]*)>/g)].map(m => m[1].trim());
+      expect(inline).toEqual(['type="application/ld+json"']);
     }
   }, 60_000);
 
