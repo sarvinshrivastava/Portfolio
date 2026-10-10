@@ -12,7 +12,9 @@ const originalScrollIntoView = Element.prototype.scrollIntoView;
 afterEach(() => {
   // Restored even when an assertion throws, so one failure cannot cascade.
   window.history.replaceState(null, '', '/');
-  Element.prototype.scrollIntoView = originalScrollIntoView;
+  // jsdom has no scrollIntoView, so "restore" means removing the stub again.
+  if (originalScrollIntoView) Element.prototype.scrollIntoView = originalScrollIntoView;
+  else delete (Element.prototype as Partial<Element>).scrollIntoView;
 });
 
 // jsdom has no IntersectionObserver; the reveal animation is irrelevant here.
@@ -54,6 +56,8 @@ describe('Credentials', () => {
   it('refuses a malformed date instead of rendering "undefined"', () => {
     expect(() => monthYear('2024')).toThrow(/bad date/);
     expect(() => monthYear('2024-13')).toThrow(/bad date/);
+    expect(() => monthYear('2024-1')).toThrow(/bad date/);
+    expect(() => monthYear('2024-09-xx')).toThrow(/bad date/);
     expect(monthYear('2024-09-20')).toBe('Sep 2024');
   });
 });

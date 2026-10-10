@@ -67,6 +67,12 @@ describe('shell parity', () => {
     const shellH1 = fragment(renderShell(route)).querySelector('h1')!;
     const pageH1s = container.querySelectorAll('h1');
 
+    // <main> and its container: their padding positions the heading.
+    const shellMain = fragment(renderShell(route)).querySelector('main')!;
+    const pageMain = container.querySelector('main')!;
+    expect(shellMain.className).toBe(pageMain.className);
+    expect(shellMain.firstElementChild!.className).toBe(pageMain.firstElementChild!.className);
+
     expect(pageH1s).toHaveLength(1);
     expect(pageH1s[0].textContent).toBe(shellH1.textContent);
     expect(pageH1s[0].className).toBe(shellH1.className);

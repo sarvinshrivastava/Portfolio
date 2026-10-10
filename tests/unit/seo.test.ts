@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  HOME_ROUTE,
   PERSON_ID,
   SEO_ROUTES,
   SITE_URL,
@@ -34,7 +35,7 @@ function graph(doc: Document): Record<string, unknown>[] {
   return JSON.parse(raw)['@graph'];
 }
 
-const home = SEO_ROUTES[0];
+const home = HOME_ROUTE;
 
 describe('route table', () => {
   it.each(SEO_ROUTES)('$path: title 30–70 and description 120–160 chars', r => {

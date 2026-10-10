@@ -111,6 +111,7 @@ function seo(): Plugin {
       const template = String(index.source);
       for (const route of SEO_ROUTES) {
         if (route === HOME_ROUTE) continue;
+        if (route.file === index.fileName) this.error(`seo: ${route.path} would overwrite index.html`);
         this.emitFile({
           type: 'asset',
           fileName: route.file,

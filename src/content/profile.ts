@@ -76,9 +76,12 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 
 /** '2024-09-20' or '2024-09' → 'Sep 2024'. Pure string math, no Date (no time zone drift). */
 export function monthYear(iso: string): string {
-  const [year, month] = iso.split('-');
-  const name = MONTHS[Number(month) - 1];
   // Fails the build/tests rather than shipping "undefined 2024" to crawlers.
-  if (!/^\d{4}$/.test(year) || !name) throw new Error(`monthYear: bad date ${iso}`);
-  return `${name} ${year}`;
+  // The data is static and every entry is rendered in tests, so this never
+  // reaches a visitor's browser.
+  if (!/^\d{4}-(0[1-9]|1[0-2])(-(0[1-9]|[12]\d|3[01]))?$/.test(iso)) {
+    throw new Error(`monthYear: bad date ${iso}`);
+  }
+  const [year, month] = iso.split('-');
+  return `${MONTHS[Number(month) - 1]} ${year}`;
 }
