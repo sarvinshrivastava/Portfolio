@@ -32,6 +32,7 @@ export function Projects() {
     <main id="main" className="pt-28 pb-16 min-h-screen" data-keynav-section>
       <div className="container">
         <SectionHeading
+          as="h1"
           prefix="## projects"
           title="What I've Built"
           subtitle="A mix of tools, AR experiences, and web apps."

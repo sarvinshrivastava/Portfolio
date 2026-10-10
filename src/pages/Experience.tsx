@@ -106,6 +106,7 @@ export function Experience() {
     <main id="main" className="pt-28 pb-16 min-h-screen" data-keynav-section>
       <div className="container">
         <SectionHeading
+          as="h1"
           prefix="## experience"
           title="Where I've Worked"
           subtitle="Internships, leadership roles, and real-world impact."

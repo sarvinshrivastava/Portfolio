@@ -1,10 +1,11 @@
 import { useAbout } from '../../context/AboutContext';
 import { trackSocial } from '../../lib/analytics';
+import { PROFILES } from '../../content/profile';
 
 export function Footer() {
   const about = useAbout();
-  const githubUrl = about?.github ?? 'https://github.com/sarvinshrivastava';
-  const linkedinUrl = about?.linkedin ?? 'https://linkedin.com/in/sarvin-shrivastava';
+  const githubUrl = about?.github ?? PROFILES.github;
+  const linkedinUrl = about?.linkedin ?? PROFILES.linkedin;
 
   return (
     <footer className="border-t border-border mt-24 py-8">
@@ -14,6 +15,12 @@ export function Footer() {
           <span className="text-muted"> — built with React + Vite</span>
         </span>
         <span>
+          {/* Plain anchor, not a router Link: react-router does not scroll to a
+              hash, and from another route this is a full load of / anyway. */}
+          <a href="/#about" className="font-mono">
+            about
+          </a>
+          {' · '}
           <a
             href={githubUrl}
             target="_blank"

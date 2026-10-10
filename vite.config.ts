@@ -1,6 +1,7 @@
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import { HOME_ROUTE, SEO_ROUTES, renderRouteHtml, seoRouteFor } from './src/seo/site';
 
 /**
  * The tracker is VENDORED at public/umami.js and served from our own origin, so
@@ -76,9 +77,55 @@ function umami(): Plugin {
   };
 }
 
+/**
+ * Writes one HTML file per route with its own <head> and a static shell inside
+ * #root, so crawlers that never run JS still see the page (see src/seo/site.ts
+ * and learnings/spa-seo-static-shell.md).
+ *
+ * Build: works in `generateBundle` on the FINAL index.html, which vite:build-html
+ * emits in its own generateBundle; `enforce: 'post'` is what puts this hook after
+ * it. Every route file is therefore a copy of the same asset tags and the same
+ * umami injection, under the umami plugin's single gate. Files are flat
+ * (`projects.html`): Netlify serves them at `/projects` with no trailing-slash
+ * redirect, and the `/*` SPA rewrite does not shadow a file that exists.
+ *
+ * Dev: `transformIndexHtml` renders the requested route so `vite dev` shows the
+ * same shell. It returns early in build, where generateBundle owns the markers;
+ * a plugin-level `apply` would have dropped generateBundle too.
+ */
+function seo(): Plugin {
+  return {
+    name: 'seo-static-shell',
+    enforce: 'post',
+    transformIndexHtml(html, ctx) {
+      if (!ctx.server) return html;
+      const pathname = new URL(ctx.originalUrl ?? '/', 'http://localhost').pathname;
+      return renderRouteHtml(html, seoRouteFor(pathname) ?? HOME_ROUTE);
+    },
+    generateBundle(_, bundle) {
+      const index = bundle['index.html'];
+      if (index?.type !== 'asset') this.error('seo: index.html is not in the bundle');
+      if (HOME_ROUTE.file !== index.fileName) {
+        this.error(`seo: HOME_ROUTE.file is ${HOME_ROUTE.file}, bundle has ${index.fileName}`);
+      }
+      const template = String(index.source);
+      for (const route of SEO_ROUTES) {
+        if (route === HOME_ROUTE) continue;
+        if (route.file === index.fileName) this.error(`seo: ${route.path} would overwrite index.html`);
+        this.emitFile({
+          type: 'asset',
+          fileName: route.file,
+          source: renderRouteHtml(template, route),
+        });
+      }
+      index.source = renderRouteHtml(template, HOME_ROUTE);
+    },
+  };
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss(), umami()],
+  plugins: [react(), tailwindcss(), umami(), seo()],
   server: {
     proxy: {
       '/api/database': 'https://notion-cache.vps.sarvinshrivastava.space',

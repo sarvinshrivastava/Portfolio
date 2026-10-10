@@ -1,0 +1,18 @@
+# Sarvin Shrivastava
+
+> Full-Stack Developer at Habuild Healthtech and AR/VR engineer with published patents. Builds interfaces, AR experiences, and tools that make developers' lives easier.
+
+## Pages
+
+- [Home](https://sarvinshrivastava.space/): introduction, about, recommendations, certifications and contact
+- [Projects](https://sarvinshrivastava.space/projects): a mix of tools, AR experiences, and web apps
+- [Experience](https://sarvinshrivastava.space/experience): internships, leadership roles, and real-world impact
+- [My Journey](https://sarvinshrivastava.space/my-journey): milestones, education, and the moments that shaped Sarvin
+
+## Profiles
+
+- [GitHub](https://github.com/sarvinshrivastava)
+- [LinkedIn](https://www.linkedin.com/in/sarvin-shrivastava-493b20176)
+- [X](https://x.com/sarvin5124)
+- [Medium](https://medium.com/@sarvin5124)
+- [Email](mailto:sarvin5124@gmail.com)

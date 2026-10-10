@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useScrollReveal } from '../../hooks/useScrollReveal';
 import { SectionHeading } from '../ui/SectionHeading';
 import { useAbout } from '../../context/AboutContext';
@@ -68,6 +69,19 @@ function getSocialLinks(data: AboutData): SocialEntry[] {
 export function About() {
   const data = useAbout();
   const ref = useScrollReveal<HTMLElement>();
+  const hashScrolled = useRef(false);
+
+  // A cold load of /#about (the footer link from another route) arrives before
+  // this section exists, so the browser's own fragment scroll finds nothing.
+  // Mount-only and once: re-running when Notion data lands would yank a reader
+  // who has already scrolled away. The ref also absorbs StrictMode's re-run.
+  useEffect(() => {
+    if (hashScrolled.current || window.location.hash !== '#about') return;
+    hashScrolled.current = true;
+    // 'instant': html has `scroll-behavior: smooth`, and a smooth scroll started
+    // during page load gets cancelled, leaving the page at the top.
+    ref.current?.scrollIntoView({ behavior: 'instant' });
+  }, [ref]);
 
   return (
     <section
