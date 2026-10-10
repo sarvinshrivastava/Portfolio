@@ -76,20 +76,20 @@ describe('SectionHeading', () => {
   });
 });
 
+function aboutWith(data: AboutData | null) {
+  return createElement(AboutContext.Provider, { value: data }, createElement(About));
+}
+
 describe('About fallback', () => {
   it('shows the static bio when Notion returns an empty one', () => {
     const data: AboutData = { ...STATIC_ABOUT, bio: '' };
-    const { container } = render(
-      createElement(AboutContext.Provider, { value: data }, createElement(About)),
-    );
+    const { container } = render(aboutWith(data));
     expect(container).toHaveTextContent(BIO);
   });
 
   it('shows Notion links when they differ from the static ones', () => {
     const data: AboutData = { bio: 'from notion', roles: [], github: 'https://github.com/other' };
-    const { container } = render(
-      createElement(AboutContext.Provider, { value: data }, createElement(About)),
-    );
+    const { container } = render(aboutWith(data));
     expect(container).toHaveTextContent('from notion');
     expect([...container.querySelectorAll('a')].map(a => a.getAttribute('href'))).toEqual([
       'https://github.com/other',
@@ -103,16 +103,14 @@ describe('About hash scroll', () => {
     Element.prototype.scrollIntoView = scroll;
     window.history.replaceState(null, '', '/#about');
 
-    const { rerender } = render(
-      createElement(AboutContext.Provider, { value: null }, createElement(About)),
-    );
+    const { rerender } = render(aboutWith(null));
     expect(scroll).toHaveBeenCalledTimes(1);
     expect(scroll).toHaveBeenCalledWith({ behavior: 'instant' });
     // Revealed up front, so the section the visitor is looking at never fades.
     expect(document.getElementById('about')).toHaveClass('revealed');
 
     const data: AboutData = { bio: 'bio', roles: [] };
-    rerender(createElement(AboutContext.Provider, { value: data }, createElement(About)));
+    rerender(aboutWith(data));
     expect(scroll).toHaveBeenCalledTimes(1);
   });
 

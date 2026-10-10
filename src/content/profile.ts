@@ -141,30 +141,53 @@ export interface SocialEntry {
 
 /** About's link list; entries whose field is missing are skipped. */
 export function aboutSocialLinks(data: About): SocialEntry[] {
-  const entries: (SocialEntry | null)[] = [
-    data.github
-      ? { href: data.github, prefix: '$ git clone', label: 'GitHub', external: true, network: 'github' }
-      : null,
-    data.linkedin
-      ? { href: data.linkedin, prefix: '$ connect', label: 'LinkedIn', external: true, network: 'linkedin' }
-      : null,
-    data.x
-      ? { href: data.x, prefix: '$ follow', label: 'X / Twitter', external: true, network: 'x' }
-      : null,
-    data.medium
-      ? { href: data.medium, prefix: '$ read', label: 'Medium', external: true, network: 'medium' }
-      : null,
-    data.email
-      ? {
-          href: `mailto:${data.email}`,
-          prefix: '$ mail',
-          label: data.email,
-          external: false,
-          network: 'email',
-        }
-      : null,
-  ];
-  return entries.filter((x): x is SocialEntry => x !== null);
+  const links: SocialEntry[] = [];
+  if (data.github) {
+    links.push({
+      href: data.github,
+      prefix: '$ git clone',
+      label: 'GitHub',
+      external: true,
+      network: 'github',
+    });
+  }
+  if (data.linkedin) {
+    links.push({
+      href: data.linkedin,
+      prefix: '$ connect',
+      label: 'LinkedIn',
+      external: true,
+      network: 'linkedin',
+    });
+  }
+  if (data.x) {
+    links.push({
+      href: data.x,
+      prefix: '$ follow',
+      label: 'X / Twitter',
+      external: true,
+      network: 'x',
+    });
+  }
+  if (data.medium) {
+    links.push({
+      href: data.medium,
+      prefix: '$ read',
+      label: 'Medium',
+      external: true,
+      network: 'medium',
+    });
+  }
+  if (data.email) {
+    links.push({
+      href: `mailto:${data.email}`,
+      prefix: '$ mail',
+      label: data.email,
+      external: false,
+      network: 'email',
+    });
+  }
+  return links;
 }
 
 export interface Contact {

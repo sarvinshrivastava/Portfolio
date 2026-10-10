@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterAll, describe, expect, it, vi } from 'vitest';
@@ -22,11 +22,9 @@ const root = resolve(__dirname, '../..');
 const toml = readFileSync(resolve(root, 'netlify.toml'), 'utf8');
 const outDirs: string[] = [];
 
-let outDir = '';
-
 async function buildTo(context?: string): Promise<(file: string) => string> {
   if (context) vi.stubEnv('CONTEXT', context);
-  outDir = mkdtempSync(join(tmpdir(), 'seo-build-'));
+  const outDir = mkdtempSync(join(tmpdir(), 'seo-build-'));
   outDirs.push(outDir);
   await build({
     root,
@@ -34,8 +32,7 @@ async function buildTo(context?: string): Promise<(file: string) => string> {
     logLevel: 'silent',
     build: { outDir, emptyOutDir: true },
   });
-  const dir = outDir;
-  return file => readFileSync(join(dir, file), 'utf8');
+  return file => readFileSync(join(outDir, file), 'utf8');
 }
 
 afterAll(() => {
@@ -64,7 +61,7 @@ describe('seo plugin build output', () => {
       expect(inline.sort()).toEqual(['', 'type="application/ld+json"']);
       expect(() => assertThemeHash(html, toml)).not.toThrow();
     }
-    expect(existsSync(join(outDir, 'theme.js'))).toBe(false);
+    expect(() => read('theme.js')).toThrow(/ENOENT/);
   }, 60_000);
 
   it('keeps umami out of every route file on preview deploys', async () => {
