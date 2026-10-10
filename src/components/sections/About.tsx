@@ -78,7 +78,9 @@ export function About() {
   useEffect(() => {
     if (hashScrolled.current || window.location.hash !== '#about') return;
     hashScrolled.current = true;
-    ref.current?.scrollIntoView();
+    // 'instant': html has `scroll-behavior: smooth`, and a smooth scroll started
+    // during page load gets cancelled, leaving the page at the top.
+    ref.current?.scrollIntoView({ behavior: 'instant' });
   }, [ref]);
 
   return (

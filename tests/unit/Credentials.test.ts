@@ -80,6 +80,7 @@ describe('About hash scroll', () => {
       createElement(AboutContext.Provider, { value: null }, createElement(About)),
     );
     expect(scroll).toHaveBeenCalledTimes(1);
+    expect(scroll).toHaveBeenCalledWith({ behavior: 'instant' });
 
     const data: AboutData = { bio: 'bio', roles: [] };
     rerender(createElement(AboutContext.Provider, { value: data }, createElement(About)));
