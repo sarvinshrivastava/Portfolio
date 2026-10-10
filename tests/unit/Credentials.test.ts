@@ -5,7 +5,13 @@ import { Credentials } from '../../src/components/sections/Credentials';
 import { SectionHeading } from '../../src/components/ui/SectionHeading';
 import { About } from '../../src/components/sections/About';
 import { AboutContext } from '../../src/context/AboutContext';
-import { CERTIFICATIONS, RECOMMENDATIONS, monthYear } from '../../src/content/profile';
+import {
+  BIO,
+  CERTIFICATIONS,
+  RECOMMENDATIONS,
+  STATIC_ABOUT,
+  monthYear,
+} from '../../src/content/profile';
 import type { About as AboutData } from '../../src/types';
 
 const originalScrollIntoView = Element.prototype.scrollIntoView;
@@ -70,6 +76,27 @@ describe('SectionHeading', () => {
   });
 });
 
+describe('About fallback', () => {
+  it('shows the static bio when Notion returns an empty one', () => {
+    const data: AboutData = { ...STATIC_ABOUT, bio: '' };
+    const { container } = render(
+      createElement(AboutContext.Provider, { value: data }, createElement(About)),
+    );
+    expect(container).toHaveTextContent(BIO);
+  });
+
+  it('shows Notion links when they differ from the static ones', () => {
+    const data: AboutData = { bio: 'from notion', roles: [], github: 'https://github.com/other' };
+    const { container } = render(
+      createElement(AboutContext.Provider, { value: data }, createElement(About)),
+    );
+    expect(container).toHaveTextContent('from notion');
+    expect([...container.querySelectorAll('a')].map(a => a.getAttribute('href'))).toEqual([
+      'https://github.com/other',
+    ]);
+  });
+});
+
 describe('About hash scroll', () => {
   it('scrolls to #about once on mount, not again when data arrives', () => {
     const scroll = vi.fn();
@@ -81,6 +108,8 @@ describe('About hash scroll', () => {
     );
     expect(scroll).toHaveBeenCalledTimes(1);
     expect(scroll).toHaveBeenCalledWith({ behavior: 'instant' });
+    // Revealed up front, so the section the visitor is looking at never fades.
+    expect(document.getElementById('about')).toHaveClass('revealed');
 
     const data: AboutData = { bio: 'bio', roles: [] };
     rerender(createElement(AboutContext.Provider, { value: data }, createElement(About)));

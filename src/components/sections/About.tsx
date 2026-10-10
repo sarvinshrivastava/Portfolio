@@ -1,87 +1,28 @@
-import { useEffect, useRef } from 'react';
 import { useScrollReveal } from '../../hooks/useScrollReveal';
+import { useHashScroll } from '../../hooks/useHashScroll';
 import { SectionHeading } from '../ui/SectionHeading';
 import { useAbout } from '../../context/AboutContext';
-import { trackSocial, type SocialNetwork } from '../../lib/analytics';
+import { trackSocial } from '../../lib/analytics';
+import {
+  ABOUT_HEADING,
+  BIO,
+  STATIC_ABOUT,
+  aboutSocialLinks,
+} from '../../content/profile';
 import type { About as AboutData } from '../../types';
 
 const LINK_CLASSES =
   'flex items-center gap-3 px-3 py-2 border border-border rounded text-[0.8125rem] text-text-muted transition-all duration-200 hover:opacity-100 hover:text-text hover:border-accent hover:bg-accent-dim';
 
-interface SocialEntry {
-  href: string;
-  prefix: string;
-  label: string;
-  external: boolean;
-  network: SocialNetwork;
-}
-
-function getSocialLinks(data: AboutData): SocialEntry[] {
-  return [
-    data.github
-      ? {
-          href: data.github,
-          prefix: '$ git clone',
-          label: 'GitHub',
-          external: true,
-          network: 'github',
-        }
-      : null,
-    data.linkedin
-      ? {
-          href: data.linkedin,
-          prefix: '$ connect',
-          label: 'LinkedIn',
-          external: true,
-          network: 'linkedin',
-        }
-      : null,
-    data.x
-      ? {
-          href: data.x,
-          prefix: '$ follow',
-          label: 'X / Twitter',
-          external: true,
-          network: 'x',
-        }
-      : null,
-    data.medium
-      ? {
-          href: data.medium,
-          prefix: '$ read',
-          label: 'Medium',
-          external: true,
-          network: 'medium',
-        }
-      : null,
-    data.email
-      ? {
-          href: `mailto:${data.email}`,
-          prefix: '$ mail',
-          label: data.email,
-          external: false,
-          network: 'email',
-        }
-      : null,
-  ].filter((x): x is SocialEntry => x !== null);
-}
-
 export function About() {
   const data = useAbout();
   const ref = useScrollReveal<HTMLElement>();
-  const hashScrolled = useRef(false);
+  useHashScroll(ref, '#about');
 
-  // A cold load of /#about (the footer link from another route) arrives before
-  // this section exists, so the browser's own fragment scroll finds nothing.
-  // Mount-only and once: re-running when Notion data lands would yank a reader
-  // who has already scrolled away. The ref also absorbs StrictMode's re-run.
-  useEffect(() => {
-    if (hashScrolled.current || window.location.hash !== '#about') return;
-    hashScrolled.current = true;
-    // 'instant': html has `scroll-behavior: smooth`, and a smooth scroll started
-    // during page load gets cancelled, leaving the page at the top.
-    ref.current?.scrollIntoView({ behavior: 'instant' });
-  }, [ref]);
+  // Static copy until Notion answers (or if it never does), so first paint
+  // matches the build-time shell. Per field for the bio: an empty or renamed
+  // Notion property must not blank a section that was already showing text.
+  const shown: AboutData = data ? { ...data, bio: data.bio || BIO } : STATIC_ABOUT;
 
   return (
     <section
@@ -92,39 +33,35 @@ export function About() {
       data-keynav-section
     >
       <div className="container">
-        <SectionHeading prefix="## about" title="Who I Am" />
+        <SectionHeading {...ABOUT_HEADING} />
 
-        {!data && <p className="text-muted font-mono">$ loading...</p>}
-
-        {data && (
-          <div className="grid grid-cols-[360px_1fr] gap-16 items-start max-[900px]:grid-cols-1 max-[900px]:gap-10">
-            <div className="flex flex-col gap-6 max-[900px]:max-w-[320px]">
-              <img
-                src="/profile-pic.webp"
-                alt="Sarvin Shrivastava"
-                className="w-full aspect-square object-cover object-top rounded-md border border-border grayscale-[20%]"
-              />
-              <div className="flex flex-col gap-2">
-                {getSocialLinks(data).map(({ href, prefix, label, external, network }) => (
-                  <a
-                    key={href}
-                    href={href}
-                    {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-                    onClick={trackSocial(network, 'about')}
-                    className={LINK_CLASSES}
-                  >
-                    <span className="font-mono text-accent text-xs min-w-[70px]">{prefix}</span>
-                    <span>{label}</span>
-                  </a>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-8 pt-2">
-              <p className="text-[1.0625rem] leading-[1.8] text-text">{data.bio}</p>
+        <div className="grid grid-cols-[360px_1fr] gap-16 items-start max-[900px]:grid-cols-1 max-[900px]:gap-10">
+          <div className="flex flex-col gap-6 max-[900px]:max-w-[320px]">
+            <img
+              src="/profile-pic.webp"
+              alt="Sarvin Shrivastava"
+              className="w-full aspect-square object-cover object-top rounded-md border border-border grayscale-[20%]"
+            />
+            <div className="flex flex-col gap-2">
+              {aboutSocialLinks(shown).map(({ href, prefix, label, external, network }) => (
+                <a
+                  key={href}
+                  href={href}
+                  {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                  onClick={trackSocial(network, 'about')}
+                  className={LINK_CLASSES}
+                >
+                  <span className="font-mono text-accent text-xs min-w-[70px]">{prefix}</span>
+                  <span>{label}</span>
+                </a>
+              ))}
             </div>
           </div>
-        )}
+
+          <div className="flex flex-col gap-8 pt-2">
+            <p className="text-[1.0625rem] leading-[1.8] text-text">{shown.bio}</p>
+          </div>
+        </div>
       </div>
     </section>
   );
