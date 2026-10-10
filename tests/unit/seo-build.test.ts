@@ -1,11 +1,12 @@
 // @vitest-environment node
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 import { build } from 'vite';
 import { SEO_ROUTES, canonicalUrl } from '../../src/seo/site';
 import { assertThemeHash } from '../../scripts/csp';
+import { seo } from '../../vite.config';
 
 /**
  * Runs the real production build and checks what the seo plugin wrote. The
@@ -62,6 +63,23 @@ describe('seo plugin build output', () => {
       expect(() => assertThemeHash(html, toml)).not.toThrow();
     }
     expect(() => read('theme.js')).toThrow(/ENOENT/);
+  }, 60_000);
+
+  it('fails the build when netlify.toml carries a stale theme hash', async () => {
+    // Netlify runs only `bun run build`, so this is the guard that matters.
+    const outDir = mkdtempSync(join(tmpdir(), 'seo-build-'));
+    outDirs.push(outDir);
+    const stale = join(outDir, 'netlify.toml');
+    writeFileSync(stale, toml.replace(/'sha256-[A-Za-z0-9+/]+=*'/, "'sha256-stale='"));
+    await expect(
+      build({
+        root,
+        configFile: false,
+        logLevel: 'silent',
+        plugins: [seo({ netlifyToml: stale })],
+        build: { outDir: join(outDir, 'dist'), emptyOutDir: true },
+      }),
+    ).rejects.toThrow(/csp: netlify.toml script-src is .* but the inline theme script needs/);
   }, 60_000);
 
   it('keeps umami out of every route file on preview deploys', async () => {

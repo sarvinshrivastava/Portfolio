@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createElement } from 'react';
 import { render, screen } from '@testing-library/react';
 import { Credentials } from '../../src/components/sections/Credentials';
+import { Connect } from '../../src/components/sections/Connect';
 import { SectionHeading } from '../../src/components/ui/SectionHeading';
 import { About } from '../../src/components/sections/About';
 import { AboutContext } from '../../src/context/AboutContext';
@@ -79,6 +80,50 @@ describe('SectionHeading', () => {
 function aboutWith(data: AboutData | null) {
   return createElement(AboutContext.Provider, { value: data }, createElement(About));
 }
+
+describe.each([
+  ['#connect', 'connect', () => createElement(Connect)],
+  ['#credentials', 'credentials', () => createElement(Credentials)],
+])('%s hash landing', (hash, id, element) => {
+  it('scrolls to the section once, instantly, and reveals it before paint', () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    window.history.replaceState(null, '', `/${hash}`);
+    render(element());
+    expect(scroll).toHaveBeenCalledTimes(1);
+    expect(scroll).toHaveBeenCalledWith({ behavior: 'instant' });
+    expect(scroll.mock.contexts[0]).toBe(document.getElementById(id));
+    expect(document.getElementById(id)).toHaveClass('revealed');
+  });
+
+  it('does nothing for another section\'s hash', () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    window.history.replaceState(null, '', '/#about');
+    render(element());
+    expect(scroll).not.toHaveBeenCalled();
+  });
+});
+
+describe('scroll reveal', () => {
+  it('reveals a section already on screen at mount, before any observer fires', () => {
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({
+      top: 100,
+      bottom: 500,
+    } as DOMRect);
+    render(createElement(Credentials));
+    expect(document.getElementById('credentials')).toHaveClass('revealed');
+  });
+
+  it('leaves a section below the fold for the observer', () => {
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({
+      top: window.innerHeight + 10,
+      bottom: window.innerHeight + 400,
+    } as DOMRect);
+    render(createElement(Credentials));
+    expect(document.getElementById('credentials')).not.toHaveClass('revealed');
+  });
+});
 
 describe('About fallback', () => {
   it('shows the static bio when Notion returns an empty one', () => {

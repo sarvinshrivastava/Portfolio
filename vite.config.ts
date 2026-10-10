@@ -1,9 +1,13 @@
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { HOME_ROUTE, SEO_ROUTES, renderRouteHtml, seoRouteFor } from './src/seo/site';
 import { assertThemeHash } from './scripts/csp';
+
+/** Next to this file, not process.cwd(), so builds started elsewhere check the right one. */
+const NETLIFY_TOML = fileURLToPath(new URL('./netlify.toml', import.meta.url));
 
 /**
  * The tracker is VENDORED at public/umami.js and served from our own origin, so
@@ -95,7 +99,7 @@ function umami(): Plugin {
  * same shell. It returns early in build, where generateBundle owns the markers;
  * a plugin-level `apply` would have dropped generateBundle too.
  */
-function seo(): Plugin {
+export function seo({ netlifyToml = NETLIFY_TOML }: { netlifyToml?: string } = {}): Plugin {
   return {
     name: 'seo-static-shell',
     enforce: 'post',
@@ -113,7 +117,7 @@ function seo(): Plugin {
       const template = String(index.source);
       // Netlify never runs the tests, so a stale CSP hash must fail the build.
       try {
-        assertThemeHash(template, readFileSync('netlify.toml', 'utf8'));
+        assertThemeHash(template, readFileSync(netlifyToml, 'utf8'));
       } catch (err) {
         this.error((err as Error).message);
       }

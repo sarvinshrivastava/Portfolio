@@ -33,7 +33,20 @@ describe('CSP hash guard', () => {
     const good = sha256Source(body);
     const bare = toml.replace(good, good.slice(1, -1));
     const extra = toml.replace(good, `${good} 'unsafe-inline'`);
-    for (const bad of [bare, extra]) expect(() => assertThemeHash(html, bad)).toThrow();
+    const moved = toml
+      .replace(` ${good}`, '')
+      .replace("default-src 'self'", `default-src 'self' ${good}`);
+    for (const bad of [bare, extra, moved]) expect(() => assertThemeHash(html, bad)).toThrow();
+  });
+
+  it('refuses script-src-elem, which would bypass the script-src check', () => {
+    const elem = toml.replace("default-src 'self';", "default-src 'self'; script-src-elem 'self';");
+    expect(() => assertThemeHash(html, elem)).toThrow(/script-src-elem/);
+  });
+
+  it('requires every CSP block to carry the same script-src', () => {
+    const second = `${toml}\n[[headers]]\n  for = "/x"\n  [headers.values]\n    Content-Security-Policy = "script-src 'self'"\n`;
+    expect(() => assertThemeHash(html, second)).toThrow(/disagree/);
   });
 });
 

@@ -6,6 +6,7 @@ import { trackSocial } from '../../lib/analytics';
 import {
   ABOUT_HEADING,
   BIO,
+  PERSON,
   STATIC_ABOUT,
   aboutSocialLinks,
 } from '../../content/profile';
@@ -38,8 +39,8 @@ export function About() {
         <div className="grid grid-cols-[360px_1fr] gap-16 items-start max-[900px]:grid-cols-1 max-[900px]:gap-10">
           <div className="flex flex-col gap-6 max-[900px]:max-w-[320px]">
             <img
-              src="/profile-pic.webp"
-              alt="Sarvin Shrivastava"
+              src={PERSON.image}
+              alt={PERSON.name}
               className="w-full aspect-square object-cover object-top rounded-md border border-border grayscale-[20%]"
             />
             <div className="flex flex-col gap-2">

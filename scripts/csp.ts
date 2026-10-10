@@ -27,16 +27,27 @@ export function sha256Source(body: string): string {
   return `'sha256-${createHash('sha256').update(body, 'utf8').digest('base64')}'`;
 }
 
-/** The script-src directive of the CSP header in netlify.toml. */
+/**
+ * The script-src directive of every CSP header block in netlify.toml (they
+ * must all agree). A `script-src-elem` would take precedence for <script>
+ * elements and silently bypass this check, so it is refused outright.
+ */
 export function scriptSrc(toml: string): string {
-  const csp = toml.match(/Content-Security-Policy\s*=\s*"([^"]*)"/)?.[1];
-  if (!csp) throw new Error('csp: no Content-Security-Policy in netlify.toml');
-  const directive = csp
-    .split(';')
-    .map(d => d.trim())
-    .find(d => d.startsWith('script-src '));
-  if (!directive) throw new Error('csp: no script-src directive in netlify.toml');
-  return directive.slice('script-src '.length).trim();
+  const policies = [...toml.matchAll(/Content-Security-Policy\s*=\s*"([^"]*)"/g)].map(m => m[1]);
+  if (policies.length === 0) throw new Error('csp: no Content-Security-Policy in netlify.toml');
+  const sources = policies.map(csp => {
+    const directives = csp.split(';').map(d => d.trim());
+    if (directives.some(d => d.startsWith('script-src-elem'))) {
+      throw new Error('csp: script-src-elem overrides script-src for <script>; extend this check first');
+    }
+    const directive = directives.find(d => d.startsWith('script-src '));
+    if (!directive) throw new Error('csp: a Content-Security-Policy has no script-src directive');
+    return directive.slice('script-src '.length).trim();
+  });
+  if (new Set(sources).size > 1) {
+    throw new Error(`csp: Content-Security-Policy blocks disagree on script-src: ${sources.join(' | ')}`);
+  }
+  return sources[0];
 }
 
 /** Throws unless script-src is exactly 'self' plus the theme script's hash. */
