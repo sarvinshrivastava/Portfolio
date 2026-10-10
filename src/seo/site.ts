@@ -18,6 +18,7 @@ import { CERTIFICATIONS, PERSON, PROFILES, RECOMMENDATIONS, monthYear } from '..
 export const SITE_URL = PERSON.url;
 export const PERSON_ID = `${SITE_URL}/#person`;
 export const WEBSITE_ID = `${SITE_URL}/#website`;
+const IMAGE_URL = `${SITE_URL}${PERSON.image}`;
 
 interface SectionHeadingCopy {
   prefix: string;
@@ -123,7 +124,7 @@ export function jsonLd(r: SeoRoute): string {
     '@id': PERSON_ID,
     name: PERSON.name,
     url: `${SITE_URL}/`,
-    image: `${SITE_URL}${PERSON.image}`,
+    image: IMAGE_URL,
     jobTitle: PERSON.jobTitle,
     email: `mailto:${PERSON.email}`,
     worksFor: { '@type': 'Organization', name: PERSON.worksFor },
@@ -173,7 +174,7 @@ export function renderHead(r: SeoRoute): string {
     `<meta property="og:title" content="${title}" />`,
     `<meta property="og:description" content="${description}" />`,
     `<meta property="og:url" content="${canonical}" />`,
-    `<meta property="og:image" content="${escapeHtml(SITE_URL + PERSON.image)}" />`,
+    `<meta property="og:image" content="${escapeHtml(IMAGE_URL)}" />`,
     `<script type="application/ld+json">${jsonLd(r)}</script>`,
   ].join('\n    ');
 }

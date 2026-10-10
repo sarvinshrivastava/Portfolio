@@ -155,7 +155,7 @@ describe('escaping', () => {
   });
 
   it('leaves $ replacement patterns literal', () => {
-    const doc = new DOMParser().parseFromString(renderRouteHtml(TEMPLATE, hostile), 'text/html');
+    const doc = parse(hostile);
     expect(doc.title).toBe(hostile.title);
     // Only the template's own umami tag; the hostile title produced no script.
     expect(doc.querySelectorAll('script:not([type])')).toHaveLength(1);
