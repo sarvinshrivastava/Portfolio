@@ -10,6 +10,7 @@ import { HelpOverlay } from './components/ui/HelpOverlay';
 import { useTheme } from './hooks/useTheme';
 import { useKeyboardNav } from './hooks/useKeyboardNav';
 import { useScrollDepth } from './hooks/useScrollDepth';
+import { useDocumentHead } from './hooks/useDocumentHead';
 import { fetchAbout } from './services/notion';
 import { installErrorTracking } from './lib/analytics';
 import { AboutContext } from './context/AboutContext';
@@ -23,6 +24,7 @@ function AppInner() {
     resumeUrl: about?.resumeUrl,
   });
   useScrollDepth();
+  useDocumentHead();
 
   useEffect(() => {
     fetchAbout().then(setAbout).catch(console.warn);

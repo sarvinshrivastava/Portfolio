@@ -77,6 +77,7 @@ export function MyJourney() {
     <main id="main" className="pt-28 pb-16 min-h-screen" data-keynav-section>
       <div className="container">
         <SectionHeading
+          as="h1"
           prefix="## my-journey"
           title="The Story So Far"
           subtitle="Milestones, education, and the moments that shaped me."

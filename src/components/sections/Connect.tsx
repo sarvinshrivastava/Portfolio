@@ -2,6 +2,7 @@ import { useState } from 'react';
 import emailjs from '@emailjs/browser';
 import { SectionHeading } from '../ui/SectionHeading';
 import { track, trackOnce, trackSocial, type SocialNetwork } from '../../lib/analytics';
+import { PERSON, PROFILES } from '../../content/profile';
 
 interface Contact {
   network: SocialNetwork;
@@ -12,29 +13,29 @@ interface Contact {
 }
 
 /**
- * The aside's reach-me links. Hardcoded here, unlike Footer/About which read
- * the same URLs from `useAbout()` — worth unifying once the data is plumbed in.
+ * The aside's reach-me links, from the shared static profile (also used by the
+ * build-time SEO output). Footer/About read `useAbout()` first and fall back to it.
  */
 const CONTACTS: Contact[] = [
   {
     network: 'email',
     label: 'email',
-    href: 'mailto:sarvin5124@gmail.com',
-    text: 'sarvin5124@gmail.com',
+    href: `mailto:${PERSON.email}`,
+    text: PERSON.email,
     external: false,
   },
   {
     network: 'github',
     label: 'github',
-    href: 'https://github.com/sarvinshrivastava',
+    href: PROFILES.github,
     text: 'sarvinshrivastava',
     external: true,
   },
   {
     network: 'linkedin',
     label: 'linkedin',
-    href: 'https://linkedin.com/in/sarvin-shrivastava',
-    text: 'sarvin-shrivastava',
+    href: PROFILES.linkedin,
+    text: 'sarvin-shrivastava-493b20176',
     external: true,
   },
 ];
