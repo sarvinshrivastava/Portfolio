@@ -12,7 +12,6 @@ import { useKeyboardNav } from './hooks/useKeyboardNav';
 import { useScrollDepth } from './hooks/useScrollDepth';
 import { useDocumentHead } from './hooks/useDocumentHead';
 import { fetchAbout } from './services/notion';
-import { installErrorTracking } from './lib/analytics';
 import { AboutContext } from './context/AboutContext';
 import type { About } from './types';
 
@@ -29,8 +28,6 @@ function AppInner() {
   useEffect(() => {
     fetchAbout().then(setAbout).catch(console.warn);
   }, []);
-
-  useEffect(installErrorTracking, []);
 
   return (
     <AboutContext.Provider value={about}>

@@ -96,4 +96,17 @@ describe('theme script matches useTheme', () => {
     new Function(body)();
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
   });
+
+  it('useTheme returns the OS theme and does not throw when storage get and set both throw', () => {
+    prefersDark(true);
+    const blocked = () => {
+      throw new Error('blocked');
+    };
+    vi.stubGlobal('localStorage', { getItem: blocked, setItem: blocked });
+
+    const { result } = renderHook(() => useTheme());
+
+    expect(result.current.theme).toBe('dark');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+  });
 });
