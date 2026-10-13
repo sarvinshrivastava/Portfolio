@@ -301,7 +301,7 @@ ${sectionHeading(CONNECT_HEADING, 'h2')}
 
 function hero(): string {
   // Hero.tsx, before the roles typewriter starts.
-  return `<section class="min-h-screen flex items-center pt-24 pb-16 max-[480px]:pt-20 max-[480px]:pb-12" aria-label="Introduction">
+  return `<section id="hero" class="min-h-screen flex items-center pt-24 pb-16 max-[480px]:pt-20 max-[480px]:pb-12" aria-label="Introduction">
 <div class="container grid grid-cols-2 gap-16 items-center max-[900px]:grid-cols-1 max-[900px]:gap-10">
 <div class="bg-bg-secondary border border-border rounded-lg overflow-hidden font-mono text-sm max-[900px]:-order-1">
 <div class="bg-bg-tertiary border-b border-border px-4 py-[0.6rem] flex items-center gap-[0.4rem]"><span class="w-3 h-3 rounded-full inline-block bg-[#ff5f57]"></span><span class="w-3 h-3 rounded-full inline-block bg-[#febc2e]"></span><span class="w-3 h-3 rounded-full inline-block bg-[#28c840]"></span><span class="ml-3 text-xs text-text-muted">sarvin@portfolio:~</span></div>

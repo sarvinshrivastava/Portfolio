@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createElement, type FunctionComponent } from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { render } from '@testing-library/react';
 import {
   aboutSection,
@@ -24,6 +25,10 @@ vi.mock('../../src/services/notion', () => {
   return { fetchProjects: pending, fetchExperience: pending, fetchTimeline: pending };
 });
 
+const { Navbar } = await import('../../src/components/layout/Navbar');
+const { Hero } = await import('../../src/components/sections/Hero');
+const { Footer } = await import('../../src/components/layout/Footer');
+const { Home } = await import('../../src/pages/Home');
 const { Credentials } = await import('../../src/components/sections/Credentials');
 const { About } = await import('../../src/components/sections/About');
 const { Connect } = await import('../../src/components/sections/Connect');
@@ -60,6 +65,17 @@ function skeleton(root: Element, drop: string[] = []): string[] {
   return [root, ...root.querySelectorAll('*')].map(el => {
     const classes = [...el.classList].filter(c => !drop.includes(c)).join(' ');
     return `${el.tagName.toLowerCase()}.${classes}`;
+  });
+}
+
+/** Tag, classes and the attributes that matter for layout and navigation, in document order. */
+function outline(root: Element): string[] {
+  return [root, ...root.querySelectorAll('*')].map(el => {
+    const attrs = ['href', 'aria-current', 'aria-expanded']
+      .map(a => (el.hasAttribute(a) ? `${a}=${el.getAttribute(a)}` : ''))
+      .filter(Boolean)
+      .join(' ');
+    return `${el.tagName.toLowerCase()}.${[...el.classList].join(' ')} ${attrs}`.trim();
   });
 }
 
@@ -116,6 +132,8 @@ describe('shell parity', () => {
     // <main> and its container: their padding positions the heading.
     const shellMain = fragment(renderShell(route)).querySelector('main')!;
     const pageMain = container.querySelector('main')!;
+    expect(shellMain.id).toBe('main');
+    expect(pageMain.id).toBe('main');
     expect(shellMain.className).toBe(pageMain.className);
     expect(shellMain.firstElementChild!.className).toBe(pageMain.firstElementChild!.className);
 
@@ -127,4 +145,66 @@ describe('shell parity', () => {
     const block = (el: Element) => [...el.parentElement!.children].map(c => c.textContent);
     expect(block(pageH1s[0])).toEqual(block(shellH1));
   });
+  it.each(['/', '/projects', '/my-journey', '/experience'])(
+    'header nav at %s matches the shell (first paint: no About yet, so no cv link)',
+    path => {
+      Object.defineProperty(window, 'scrollY', { value: 0, configurable: true });
+      const { container } = render(
+        createElement(
+          MemoryRouter,
+          { initialEntries: [path] },
+          createElement(Navbar, { theme: 'dark', onThemeToggle: () => {} }),
+        ),
+      );
+      const shell = fragment(renderShell(seoRouteFor(path)!)).querySelector('header')!;
+      const app = container.querySelector('header')!;
+      // The theme button's glyph spans are the shell's CSS-variant trick; the nav
+      // label differs on purpose ("Site" vs "Main navigation") and is not outlined.
+      for (const header of [shell, app]) {
+        header.querySelectorAll('button[aria-label^="Switch"]').forEach(b => b.replaceChildren());
+        // NavLink marks the brand link active at "/" (class + aria-current); the
+        // shell does not. It has no style, so it is normalised away rather than
+        // changing the shipped shell markup.
+        const brand = header.querySelector('nav > a')!;
+        brand.classList.remove('active');
+        brand.removeAttribute('aria-current');
+      }
+      expect(outline(shell.querySelector('nav')!)).toEqual(outline(app.querySelector('nav')!));
+      expect(shell.className).toBe(app.className);
+    },
+  );
+
+  it('hero section (no About yet) matches the shell hero', () => {
+    const { container } = render(
+      createElement(MemoryRouter, { initialEntries: ['/'] }, createElement(Hero)),
+    );
+    const shell = fragment(renderShell(seoRouteFor('/')!)).querySelector('#hero')!;
+    const app = container.firstElementChild!;
+    expect(shell.id).toBe(app.id);
+    expect(skeleton(shell)).toEqual(skeleton(app));
+    expect(leafText(shell)).toEqual(leafText(app));
+  });
+
+  it('footer first row matches the shell footer', () => {
+    const { container } = render(createElement(Footer));
+    const shell = fragment(renderShell(seoRouteFor('/')!)).querySelector('footer')!;
+    const app = container.querySelector('footer')!;
+    expect(shell.className).toBe(app.className);
+    expect(shell.firstElementChild!.className).toBe(app.firstElementChild!.className);
+    const row = (el: Element) => el.querySelector('div > span:nth-of-type(2)')!;
+    expect(skeleton(row(shell))).toEqual(skeleton(row(app)));
+    expect(leafText(row(shell))).toEqual(leafText(row(app)));
+  });
+
+  it('Home has the same main#main as the shell', () => {
+    const { container } = render(
+      createElement(MemoryRouter, { initialEntries: ['/'] }, createElement(Home)),
+    );
+    const shell = fragment(renderShell(seoRouteFor('/')!)).querySelector('main')!;
+    const app = container.querySelector('main')!;
+    expect(app.id).toBe('main');
+    expect(shell.id).toBe(app.id);
+    expect(shell.className).toBe(app.className);
+  });
+
 });

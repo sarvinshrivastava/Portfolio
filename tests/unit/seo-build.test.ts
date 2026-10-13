@@ -23,7 +23,7 @@ const root = resolve(__dirname, '../..');
 const toml = readFileSync(resolve(root, 'netlify.toml'), 'utf8');
 const outDirs: string[] = [];
 
-async function buildTo(context?: string): Promise<(file: string) => string> {
+async function buildTo(context?: string, mode?: string): Promise<(file: string) => string> {
   if (context) vi.stubEnv('CONTEXT', context);
   const outDir = mkdtempSync(join(tmpdir(), 'seo-build-'));
   outDirs.push(outDir);
@@ -31,6 +31,7 @@ async function buildTo(context?: string): Promise<(file: string) => string> {
     root,
     configFile: resolve(root, 'vite.config.ts'),
     logLevel: 'silent',
+    ...(mode ? { mode } : {}),
     build: { outDir, emptyOutDir: true },
   });
   return file => readFileSync(join(outDir, file), 'utf8');
@@ -86,6 +87,15 @@ describe('seo plugin build output', () => {
     const read = await buildTo('deploy-preview');
     for (const route of SEO_ROUTES) {
       expect(read(route.file)).not.toContain('<script defer src="/umami.js"');
+    }
+  }, 60_000);
+
+  it('keeps umami and its preconnect out of every route file in a development-mode build', async () => {
+    const read = await buildTo(undefined, 'development');
+    for (const route of SEO_ROUTES) {
+      const html = read(route.file);
+      expect(html, route.file).not.toContain('<script defer src="/umami.js"');
+      expect(html, route.file).not.toContain('umami.vps.sarvinshrivastava.space');
     }
   }, 60_000);
 });
