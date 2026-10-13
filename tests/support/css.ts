@@ -28,3 +28,17 @@ export function contrast(a: string, b: string): number {
   const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
   return (hi + 0.05) / (lo + 0.05);
 }
+
+/**
+ * The `max-width` of the last `.container { … }` rule in built CSS, in source
+ * order, or undefined. Tailwind's built-in container utility emits 40rem..96rem
+ * breakpoint rules; our `@utility container` must come after them.
+ */
+export function lastContainerMaxWidth(css: string): string | undefined {
+  let last: string | undefined;
+  for (const rule of css.matchAll(/\.container\s*\{([^}]*)\}/g)) {
+    const width = /(?:^|;)\s*max-width\s*:\s*([^;]+?)\s*(?:;|$)/.exec(rule[1]);
+    if (width) last = width[1];
+  }
+  return last;
+}
