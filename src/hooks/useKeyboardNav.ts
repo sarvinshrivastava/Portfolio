@@ -67,10 +67,18 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
     const getElements = (section: Element): Element[] =>
       Array.from(section.querySelectorAll('[data-keynav-element]'));
 
+    // Drop native focus (and its ring) when it is not on `except`, so the
+    // keynav highlight is never shown alongside a second ring.
+    const blurActive = (except?: Element | null) => {
+      const a = document.activeElement;
+      if (a instanceof HTMLElement && a !== document.body && a !== except) a.blur();
+    };
+
     const applyFocusSection = (idx: number, sections: Element[]) => {
       removeFocus();
       const el = sections[idx];
       if (!el) return;
+      blurActive(el);
       el.classList.add('keynav-focused');
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     };
@@ -82,6 +90,7 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
       const elements = getElements(section);
       const el = elements[elIdx] as HTMLElement | undefined;
       if (!el) return;
+      blurActive(el);
       el.classList.add('keynav-focused');
       el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       // Only call .focus() on non-interactive elements; inputs will focus themselves
@@ -100,29 +109,48 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
       if (isInput && e.key !== 'Escape') return;
 
       const { mode, sectionIndex, elementIndex, showHelp, pathname } = stateRef.current;
+      // While the help overlay is open, only Escape and h do anything.
+      if (showHelp && e.key !== 'Escape' && e.key !== 'h') return;
       const sections = getSections();
 
       switch (e.key) {
         case 'ArrowLeft': {
           e.preventDefault();
-          const idx = PAGES.indexOf(pathname);
+          const norm = pathname.toLowerCase().replace(/\/+$/, '') || '/';
+          const idx = PAGES.indexOf(norm);
+          if (idx === -1) break;
           const prev = PAGES[Math.max(0, idx - 1)];
-          if (prev && prev !== pathname) navigate(prev);
+          if (prev && prev !== norm) {
+            blurActive();
+            navigate(prev);
+          } else if (document.activeElement?.closest('header')) {
+            blurActive();
+          }
           break;
         }
 
         case 'ArrowRight': {
           e.preventDefault();
-          const idx = PAGES.indexOf(pathname);
+          const norm = pathname.toLowerCase().replace(/\/+$/, '') || '/';
+          const idx = PAGES.indexOf(norm);
+          if (idx === -1) break;
           const next = PAGES[Math.min(PAGES.length - 1, idx + 1)];
-          if (next && next !== pathname) navigate(next);
+          if (next && next !== norm) {
+            blurActive();
+            navigate(next);
+          } else if (document.activeElement?.closest('header')) {
+            blurActive();
+          }
           break;
         }
 
         case 'j':
         case 'ArrowDown': {
           // ArrowDown in idle → let the browser scroll naturally
-          if (e.key === 'ArrowDown' && mode === 'idle') break;
+          if (e.key === 'ArrowDown' && mode === 'idle') {
+            if (document.activeElement?.closest('header')) blurActive();
+            break;
+          }
           e.preventDefault();
 
           if (mode === 'idle') {
@@ -173,7 +201,10 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
         case 'k':
         case 'ArrowUp': {
           // ArrowUp in idle → let the browser scroll naturally
-          if (e.key === 'ArrowUp' && mode === 'idle') break;
+          if (e.key === 'ArrowUp' && mode === 'idle') {
+            if (document.activeElement?.closest('header')) blurActive();
+            break;
+          }
           e.preventDefault();
 
           if (mode === 'section') {
@@ -224,10 +255,18 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
               applyFocusElement(sectionIndex, 0, sections);
             }
           } else if (mode === 'element') {
-            e.preventDefault();
             const section = sections[sectionIndex];
             const elements = section ? getElements(section) : [];
             const el = elements[elementIndex] as HTMLElement | undefined;
+            const active = document.activeElement;
+            if (active && active !== document.body && active !== el) {
+              // The user Tabbed to something else: leave Enter to it (native
+              // activation) and drop the keynav highlight.
+              setMode('idle');
+              removeFocus();
+              break;
+            }
+            e.preventDefault();
             el?.click();
           }
           break;
@@ -271,9 +310,9 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
         }
 
         case '/': {
-          e.preventDefault();
           // Focus the first button inside the filter container
           const filterContainer = document.querySelector('[data-keynav-filter]');
+          if (filterContainer) e.preventDefault();
           const firstBtn = filterContainer?.querySelector('button') as HTMLElement | null;
           (firstBtn ?? (filterContainer as HTMLElement | null))?.focus();
           break;
