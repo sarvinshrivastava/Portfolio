@@ -50,7 +50,7 @@ function BulletText({ text, techStack }: { text: string; techStack: string[] }) 
   for (const tech of techStack) {
     // No lookbehind (Safari < 16.4): capture the preceding char instead, so
     // "Go" matches in "using Go" but not inside "Google".
-    const m = new RegExp('(^|[^\\w])(' + escapeRegExp(tech) + ')(?![\\w+#])').exec(clean);
+    const m = new RegExp('(^|[^\\w])(' + escapeRegExp(tech) + ')(?![\\w]|\\+\\+|#)').exec(clean);
     if (m) {
       const idx = m.index + m[1].length;
       return (
@@ -146,7 +146,7 @@ export function Experience() {
                     {exp.company}
                   </h2>
                   <p className="text-xs text-text-muted font-sans mt-[3px]">{exp.role}</p>
-                  {isCurrentRole(exp.endDate) && (
+                  {(exp.startDate || exp.endDate) && isCurrentRole(exp.endDate) && (
                     <div className="flex items-center gap-1 mt-[6px]">
                       <span
                         className="w-[5px] h-[5px] rounded-full bg-[#1D9E75] animate-pulse inline-block"
@@ -157,13 +157,13 @@ export function Experience() {
                   )}
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-xs font-mono text-accent">
-                    {!exp.startDate && !exp.endDate
-                      ? ''
-                      : exp.startDate
+                  {(exp.startDate || exp.endDate) && (
+                    <p className="text-xs font-mono text-accent">
+                      {exp.startDate
                         ? `${formatDate(exp.startDate, false)} → ${formatDate(exp.endDate, true)}`
                         : formatDate(exp.endDate, true)}
-                  </p>
+                    </p>
+                  )}
                   <p className="text-xs text-text-muted font-sans mt-[2px]">{exp.location}</p>
                 </div>
               </div>

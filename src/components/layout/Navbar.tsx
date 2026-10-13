@@ -31,6 +31,8 @@ export function Navbar({ theme, onThemeToggle, resumeUrl }: NavbarProps) {
     return () => window.removeEventListener('scroll', handler);
   }, []);
 
+  const normPath = (p: string) => p.toLowerCase().replace(/\/+$/, '') || '/';
+
   // Close the drawer and hand focus back to the hamburger, since the focused
   // drawer link unmounts with the drawer.
   const closeMenu = () => {
@@ -125,7 +127,7 @@ export function Navbar({ theme, onThemeToggle, resumeUrl }: NavbarProps) {
                 <NavLink
                   to={to}
                   end={exact}
-                  onClick={() => (to === location.pathname ? closeMenu() : setMenuOpenAt(null))}
+                  onClick={() => (normPath(to) === normPath(location.pathname) ? closeMenu() : setMenuOpenAt(null))}
                   className={({ isActive }) =>
                     `block px-6 py-3 font-mono text-[0.9rem] transition-[color,background] focus-visible:outline-offset-[-3px] ${
                       isActive
@@ -134,7 +136,7 @@ export function Navbar({ theme, onThemeToggle, resumeUrl }: NavbarProps) {
                     }`
                   }
                 >
-                  <span className="text-accent">$ </span>
+                  <span className="text-accent" aria-hidden="true">$ </span>
                   {label}
                 </NavLink>
               </li>
@@ -151,7 +153,7 @@ export function Navbar({ theme, onThemeToggle, resumeUrl }: NavbarProps) {
                   }}
                   className="block px-6 py-3 font-mono text-[0.9rem] text-text-muted transition-[color,background] focus-visible:outline-offset-[-3px] hover:text-text hover:bg-bg-tertiary"
                 >
-                  <span className="text-accent">$ </span>
+                  <span className="text-accent" aria-hidden="true">$ </span>
                   <span aria-hidden="true">↓ </span>resume
                   <span className="sr-only"> (opens in new tab)</span>
                 </a>

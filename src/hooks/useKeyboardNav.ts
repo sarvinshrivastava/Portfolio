@@ -4,6 +4,20 @@ import { track } from '../lib/analytics';
 
 type NavMode = 'idle' | 'section' | 'element';
 
+const KEYNAV_KEYS = new Set([
+  'ArrowLeft',
+  'ArrowRight',
+  'ArrowUp',
+  'ArrowDown',
+  'j',
+  'k',
+  'd',
+  'h',
+  'r',
+  'Escape',
+  '/',
+]);
+
 const PAGES = ['/', '/projects', '/my-journey', '/experience'];
 
 interface UseKeyboardNavOptions {
@@ -89,8 +103,6 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
       if (target && target !== norm) {
         blurActive();
         navigate(target);
-      } else {
-        blurIfInHeader();
       }
       return true;
     };
@@ -129,6 +141,9 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
       // Let inputs handle all keys except Escape
       if (isInput && e.key !== 'Escape') return;
 
+      // Keys the keynav owns drop header focus (and its ring) up front
+      if (KEYNAV_KEYS.has(e.key)) blurIfInHeader();
+
       const { mode, sectionIndex, elementIndex, showHelp, pathname } = stateRef.current;
       // While the help overlay is open, only Escape and h do anything.
       if (showHelp && e.key !== 'Escape' && e.key !== 'h') return;
@@ -137,19 +152,16 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
       switch (e.key) {
         case 'ArrowLeft':
           if (stepPage(pathname, -1)) e.preventDefault();
-          else blurIfInHeader();
           break;
 
         case 'ArrowRight':
           if (stepPage(pathname, 1)) e.preventDefault();
-          else blurIfInHeader();
           break;
 
         case 'j':
         case 'ArrowDown': {
           // ArrowDown in idle → let the browser scroll naturally
           if (e.key === 'ArrowDown' && mode === 'idle') {
-            blurIfInHeader();
             break;
           }
           e.preventDefault();
@@ -203,7 +215,6 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
         case 'ArrowUp': {
           // ArrowUp in idle → let the browser scroll naturally
           if (e.key === 'ArrowUp' && mode === 'idle') {
-            blurIfInHeader();
             break;
           }
           e.preventDefault();
@@ -228,7 +239,6 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
               // At first section → exit to idle
               setMode('idle');
               removeFocus();
-              blurIfInHeader();
               window.scrollBy({ top: -300, behavior: 'smooth' });
             }
           } else if (mode === 'element') {
@@ -293,14 +303,12 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
 
         case 'd': {
           e.preventDefault();
-          blurIfInHeader();
           toggleRef.current();
           break;
         }
 
         case 'r': {
           // Only 'r' alone — modifiers already blocked above
-          blurIfInHeader();
           if (resumeRef.current) {
             e.preventDefault();
             track('resume_open', { source: 'keyboard' });
@@ -313,7 +321,6 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
 
         case 'h': {
           e.preventDefault();
-          blurIfInHeader();
           setShowHelp(v => !v);
           break;
         }

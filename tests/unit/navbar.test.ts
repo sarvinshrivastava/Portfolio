@@ -10,11 +10,11 @@ vi.mock('../../src/lib/analytics', () => ({ track: vi.fn() }));
 
 const RESUME = 'https://example.com/cv';
 
-function renderNavbar() {
+function renderNavbar(path = '/') {
   return render(
     createElement(
       MemoryRouter,
-      { initialEntries: ['/'] },
+      { initialEntries: [path] },
       createElement(Navbar, { theme: 'dark', onThemeToggle: () => {}, resumeUrl: RESUME }),
     ),
   );
@@ -92,5 +92,28 @@ describe('Navbar', () => {
     expect(link).toHaveAccessibleName(/cv/);
     expect(link).not.toHaveAccessibleName(/PDF/);
     expect(link.querySelector('[aria-hidden="true"]')?.textContent).toContain('↓');
+  });
+
+  it('(d2) names the drawer resume link without the prompt or arrow glyphs', () => {
+    renderNavbar();
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
+    const dialog = screen.getByRole('dialog', { name: 'Mobile menu' });
+    const link = within(dialog).getByRole('link', { name: /resume/ });
+
+    expect(link).toHaveAccessibleName(/opens in new tab/);
+    expect(link).not.toHaveAccessibleName(/↓/);
+    expect(link).not.toHaveAccessibleName(/\$/);
+  });
+
+  it('(b4) treats /projects/ as the current page and returns focus to the hamburger', () => {
+    renderNavbar('/projects/');
+    const toggle = screen.getByRole('button', { name: 'Toggle menu' });
+    fireEvent.click(toggle);
+    const dialog = screen.getByRole('dialog', { name: 'Mobile menu' });
+
+    fireEvent.click(within(dialog).getByRole('link', { name: /Projects/ }));
+
+    expect(screen.queryByRole('dialog', { name: 'Mobile menu' })).toBeNull();
+    expect(document.activeElement).toBe(toggle);
   });
 });

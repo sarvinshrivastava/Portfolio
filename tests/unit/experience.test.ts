@@ -47,7 +47,26 @@ describe('Experience', () => {
   it('renders no date text when both dates are empty', async () => {
     const { container } = await renderWith({ startDate: '', endDate: '' });
 
-    expect(container.querySelector('article p.text-accent')?.textContent).toBe('');
+    expect(container.querySelector('article p.text-accent')).toBeNull();
+    expect(screen.queryByText('currently here')).toBeNull();
+  });
+
+  it('still highlights a standalone "C"', async () => {
+    const { container } = await renderWith({
+      description: ['wrote C daily'],
+      techStack: ['C'],
+    });
+
+    expect(highlights(container)).toEqual(['C']);
+  });
+
+  it('highlights React in "React+Redux"', async () => {
+    const { container } = await renderWith({
+      description: ['built with React+Redux'],
+      techStack: ['React'],
+    });
+
+    expect(highlights(container)).toEqual(['React']);
   });
 
   it('does not highlight "C" inside "C++" or "C#"', async () => {

@@ -193,18 +193,16 @@ export function MyJourney() {
             </div>
 
             {/* Footer — no blinking cursor */}
-            {events.length > 0 && (
-              <div className="mt-4 pt-3 border-t border-border text-[11px] text-text-muted flex flex-wrap items-center gap-x-[4px]">
-                <span>{events.length} commits</span>
-                {Object.entries(FOOTER_COLORS).map(([cat, color]) => (
-                  <span key={cat}>
-                    <span style={{ color: 'var(--text-muted)' }}> · </span>
-                    <span style={{ color }}>{cat}</span>
-                  </span>
-                ))}
-                <span> · HEAD</span>
-              </div>
-            )}
+            <div className="mt-4 pt-3 border-t border-border text-[11px] text-text-muted flex flex-wrap items-center gap-x-[4px]">
+              <span>{events.length} commits</span>
+              {Object.entries(FOOTER_COLORS).map(([cat, color]) => (
+                <span key={cat}>
+                  <span style={{ color: 'var(--text-muted)' }}> · </span>
+                  <span style={{ color }}>{cat}</span>
+                </span>
+              ))}
+              <span> · HEAD</span>
+            </div>
           </div>
         </div>
         )}

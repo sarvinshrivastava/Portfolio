@@ -279,4 +279,43 @@ describe('useKeyboardNav', () => {
 
     expect(currentPath()).toBe('/my-journey');
   });
+
+  it.each(['/', '/projects'])('(m3) ArrowLeft is prevented on %s', path => {
+    mount(path);
+
+    expect(press('ArrowLeft').defaultPrevented).toBe(true);
+  });
+
+  it.each([
+    'ArrowLeft',
+    'ArrowRight',
+    'ArrowUp',
+    'ArrowDown',
+    'j',
+    'k',
+    'd',
+    'h',
+    'r',
+    'Escape',
+    '/',
+  ])('(n) %s drops header focus (idle, no sections, no resume, no filter)', key => {
+    const link = el('a', el('header'), { href: '#x' });
+    mount('/');
+    link.focus();
+    expect(document.activeElement).toBe(link);
+
+    press(key);
+
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it.each(['Enter', ' ', 'Tab'])('(n2) %s never blurs header focus', key => {
+    const link = el('a', el('header'), { href: '#x' });
+    mount('/');
+    link.focus();
+
+    press(key, link);
+
+    expect(document.activeElement).toBe(link);
+  });
 });
