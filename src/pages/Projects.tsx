@@ -62,12 +62,12 @@ export function Projects() {
           ))}
         </div>
 
-        {loading && <p className="text-muted font-mono">$ loading...</p>}
+        {loading && <p className="text-text-muted font-mono text-sm">$ loading...</p>}
         {error && (
-          <p className="text-text-muted font-mono">$ couldn't load projects — try again later</p>
+          <p className="text-text-muted font-mono text-sm">$ couldn't load projects — try again later</p>
         )}
         {!loading && !error && filtered.length === 0 && (
-          <p className="text-text-muted font-mono">
+          <p className="text-text-muted font-mono text-sm">
             {filter === 'All' ? '$ no projects yet' : `$ no projects in ${filter}`}
           </p>
         )}
@@ -85,7 +85,7 @@ export function Projects() {
 function ProjectCard({ project }: { project: Project }) {
   return (
     <article
-      className="bg-bg-secondary border border-border rounded-md p-6 flex flex-col gap-4 relative transition-all duration-200 hover:border-accent hover:-translate-y-0.5"
+      className="bg-bg-secondary border border-border rounded-md p-6 flex flex-col gap-4 relative transition-[border-color,transform] duration-200 hover:border-accent motion-safe:hover:-translate-y-0.5"
     >
       <div className="flex justify-between items-start gap-3">
         <h2 className="font-mono text-base font-bold text-text">{project.title}</h2>

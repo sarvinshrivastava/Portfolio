@@ -50,7 +50,7 @@ function BulletText({ text, techStack }: { text: string; techStack: string[] }) 
   for (const tech of techStack) {
     // No lookbehind (Safari < 16.4): capture the preceding char instead, so
     // "Go" matches in "using Go" but not inside "Google".
-    const m = new RegExp('(^|[^\\w])(' + escapeRegExp(tech) + ')(?![\\w])').exec(clean);
+    const m = new RegExp('(^|[^\\w])(' + escapeRegExp(tech) + ')(?![\\w+#])').exec(clean);
     if (m) {
       const idx = m.index + m[1].length;
       return (
@@ -158,9 +158,11 @@ export function Experience() {
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-xs font-mono text-accent">
-                    {exp.startDate
-                      ? `${formatDate(exp.startDate, false)} → ${formatDate(exp.endDate, true)}`
-                      : formatDate(exp.endDate, true)}
+                    {!exp.startDate && !exp.endDate
+                      ? ''
+                      : exp.startDate
+                        ? `${formatDate(exp.startDate, false)} → ${formatDate(exp.endDate, true)}`
+                        : formatDate(exp.endDate, true)}
                   </p>
                   <p className="text-xs text-text-muted font-sans mt-[2px]">{exp.location}</p>
                 </div>

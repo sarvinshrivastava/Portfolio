@@ -13,6 +13,7 @@ describe('MyJourney', () => {
     render(createElement(MyJourney));
 
     expect(await screen.findByText(/couldn't load journey/)).toBeInTheDocument();
+    expect(screen.queryByText('sarvin@portfolio:~/journey')).toBeNull();
     expect(screen.queryByText('$ no commits yet')).toBeNull();
   });
 
@@ -21,6 +22,7 @@ describe('MyJourney', () => {
     render(createElement(MyJourney));
 
     expect(await screen.findByText('$ no commits yet')).toBeInTheDocument();
+    expect(screen.queryByText('sarvin@portfolio:~/journey')).toBeNull();
   });
 
   it('uses theme tokens, not hard-coded white borders', async () => {

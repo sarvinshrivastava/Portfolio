@@ -44,6 +44,21 @@ describe('Experience', () => {
     expect(container.querySelector('article p.text-accent')?.textContent).toBe('Jan 2023 → Present');
   });
 
+  it('renders no date text when both dates are empty', async () => {
+    const { container } = await renderWith({ startDate: '', endDate: '' });
+
+    expect(container.querySelector('article p.text-accent')?.textContent).toBe('');
+  });
+
+  it('does not highlight "C" inside "C++" or "C#"', async () => {
+    const { container } = await renderWith({
+      description: ['wrote C++ and C# code'],
+      techStack: ['C'],
+    });
+
+    expect(highlights(container)).toEqual([]);
+  });
+
   it('does not highlight "Go" inside "Google"', async () => {
     const { container } = await renderWith({
       description: ['worked at Google daily'],

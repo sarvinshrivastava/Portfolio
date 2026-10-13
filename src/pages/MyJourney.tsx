@@ -94,6 +94,7 @@ export function MyJourney() {
           <p className="text-text-muted font-mono text-sm">$ no commits yet</p>
         )}
 
+        {events.length > 0 && (
         <div className="max-w-[680px] mx-auto bg-bg-secondary border border-border rounded-lg overflow-hidden font-mono text-xs">
           {/* Title bar */}
           <div className="bg-bg-tertiary border-b border-border px-4 py-[0.6rem] flex items-center gap-[0.4rem]">
@@ -206,6 +207,7 @@ export function MyJourney() {
             )}
           </div>
         </div>
+        )}
       </div>
     </main>
   );

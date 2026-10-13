@@ -91,7 +91,7 @@ describe('seo plugin build output', () => {
   }, 60_000);
 
   it('keeps umami and its preconnect out of every route file in a development-mode build', async () => {
-    const read = await buildTo(undefined, 'development');
+    const read = await buildTo('production', 'development');
     for (const route of SEO_ROUTES) {
       const html = read(route.file);
       expect(html, route.file).not.toContain('<script defer src="/umami.js"');

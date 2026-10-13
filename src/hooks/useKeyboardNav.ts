@@ -79,10 +79,12 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
     };
 
     // Move one page left (-1) or right (+1); at either end, just drop header focus.
-    const stepPage = (pathname: string, step: -1 | 1) => {
+    // Returns true when the key was handled (navigated or hit a known boundary),
+    // false for an unknown route so the caller can leave the key to the browser.
+    const stepPage = (pathname: string, step: -1 | 1): boolean => {
       const norm = pathname.toLowerCase().replace(/\/+$/, '') || '/';
       const idx = PAGES.indexOf(norm);
-      if (idx === -1) return;
+      if (idx === -1) return false;
       const target = PAGES[Math.min(PAGES.length - 1, Math.max(0, idx + step))];
       if (target && target !== norm) {
         blurActive();
@@ -90,6 +92,7 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
       } else {
         blurIfInHeader();
       }
+      return true;
     };
 
     const applyFocusSection = (idx: number, sections: Element[]) => {
@@ -133,13 +136,13 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
 
       switch (e.key) {
         case 'ArrowLeft':
-          e.preventDefault();
-          stepPage(pathname, -1);
+          if (stepPage(pathname, -1)) e.preventDefault();
+          else blurIfInHeader();
           break;
 
         case 'ArrowRight':
-          e.preventDefault();
-          stepPage(pathname, 1);
+          if (stepPage(pathname, 1)) e.preventDefault();
+          else blurIfInHeader();
           break;
 
         case 'j':
@@ -225,6 +228,7 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
               // At first section → exit to idle
               setMode('idle');
               removeFocus();
+              blurIfInHeader();
               window.scrollBy({ top: -300, behavior: 'smooth' });
             }
           } else if (mode === 'element') {
@@ -273,6 +277,10 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
         case 'Escape': {
           if (showHelp) {
             setShowHelp(false);
+          } else if (isInput && (mode === 'element' || mode === 'section')) {
+            // Keep focus in the field; just leave keynav
+            setMode('idle');
+            removeFocus();
           } else if (mode === 'element') {
             setMode('section');
             applyFocusSection(sectionIndex, sections);
@@ -285,12 +293,14 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
 
         case 'd': {
           e.preventDefault();
+          blurIfInHeader();
           toggleRef.current();
           break;
         }
 
         case 'r': {
           // Only 'r' alone — modifiers already blocked above
+          blurIfInHeader();
           if (resumeRef.current) {
             e.preventDefault();
             track('resume_open', { source: 'keyboard' });
@@ -303,6 +313,7 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
 
         case 'h': {
           e.preventDefault();
+          blurIfInHeader();
           setShowHelp(v => !v);
           break;
         }

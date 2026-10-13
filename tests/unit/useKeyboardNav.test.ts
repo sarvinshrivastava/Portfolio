@@ -115,6 +115,14 @@ describe('useKeyboardNav', () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
+  it('(d2) / with a filter present is prevented', () => {
+    const filter = el('div', document.body, { 'data-keynav-filter': '' });
+    el('button', filter);
+    mount('/');
+
+    expect(press('/').defaultPrevented).toBe(true);
+  });
+
   it('(e) j blurs a focused section button and highlights the section', () => {
     const section = el('section', el('main'), { 'data-keynav-section': '' });
     const button = el('button', section);
@@ -181,6 +189,81 @@ describe('useKeyboardNav', () => {
     expect(otherClick).toHaveBeenCalledTimes(1);
     expect(enter.defaultPrevented).toBe(false);
     expect(target.classList.contains('keynav-focused')).toBe(false);
+  });
+
+  it.each([
+    ['button', 'button', {}],
+    ['focusable div', 'div', { tabindex: '-1' }],
+  ] as const)('(h2) Enter in element mode clicks a %s once and is prevented', (_n, tag, attrs) => {
+    const section = el('section', el('main'), { 'data-keynav-section': '' });
+    const target = el(tag, section, { 'data-keynav-element': '', ...attrs });
+    const onClick = vi.fn();
+    target.addEventListener('click', onClick);
+    mount('/');
+
+    press('j');
+    press('j');
+    const enter = press('Enter');
+
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(enter.defaultPrevented).toBe(true);
+  });
+
+  it.each(['d', 'h', 'r'])('(k) %s drops focus from a header link', key => {
+    const link = el('a', el('header'), { href: '#x' });
+    mount('/', { resumeUrl: 'https://example.com/cv' });
+    vi.spyOn(window, 'open').mockReturnValue(null);
+    link.focus();
+
+    press(key);
+
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it('(k2) ArrowUp from the first section drops header focus', () => {
+    const link = el('a', el('header'), { href: '#x' });
+    el('section', el('main'), { 'data-keynav-section': '' });
+    mount('/');
+    press('j'); // section mode at index 0
+    link.focus();
+
+    press('ArrowUp');
+
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it('(l) Escape in an input leaves keynav but keeps focus in the field', () => {
+    const section = el('section', el('main'), { 'data-keynav-section': '' });
+    const target = el('button', section, { 'data-keynav-element': '' });
+    const input = el('input', document.body);
+    mount('/');
+    press('j');
+    press('j'); // element mode
+    expect(target.classList.contains('keynav-focused')).toBe(true);
+    input.focus();
+
+    press('Escape', input);
+
+    expect(document.activeElement).toBe(input);
+    expect(document.querySelector('.keynav-focused')).toBeNull();
+  });
+
+  it('(m) arrows on an unknown route are not prevented and drop header focus', () => {
+    const link = el('a', el('header'), { href: '#x' });
+    mount('/nope');
+    link.focus();
+
+    expect(press('ArrowRight').defaultPrevented).toBe(false);
+    expect(document.activeElement).toBe(document.body);
+    link.focus();
+    expect(press('ArrowLeft').defaultPrevented).toBe(false);
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it('(m2) arrows on a known page are prevented', () => {
+    mount('/');
+
+    expect(press('ArrowRight').defaultPrevented).toBe(true);
   });
 
   it('(i) / with no filter on the page is not prevented', () => {

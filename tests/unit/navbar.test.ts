@@ -42,6 +42,36 @@ describe('Navbar', () => {
     expect(screen.queryByRole('dialog', { name: 'Mobile menu' })).toBeNull();
   });
 
+  it('(b2) closes the drawer when the brand link is clicked', () => {
+    renderNavbar();
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
+    expect(screen.getByRole('dialog', { name: 'Mobile menu' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('link', { name: /Sarvin Shrivastava/ }));
+
+    expect(screen.queryByRole('dialog', { name: 'Mobile menu' })).toBeNull();
+  });
+
+  it('(b3) returns focus to the hamburger after a same-path or resume close', () => {
+    renderNavbar();
+    const toggle = screen.getByRole('button', { name: 'Toggle menu' });
+
+    fireEvent.click(toggle);
+    fireEvent.click(
+      within(screen.getByRole('dialog', { name: 'Mobile menu' })).getByRole('link', { name: /Home/ }),
+    );
+    expect(document.activeElement).toBe(toggle);
+
+    toggle.blur();
+    fireEvent.click(toggle);
+    fireEvent.click(
+      within(screen.getByRole('dialog', { name: 'Mobile menu' })).getByRole('link', {
+        name: /resume/,
+      }),
+    );
+    expect(document.activeElement).toBe(toggle);
+  });
+
   it('(c) tracks the mobile resume link and closes the drawer', () => {
     renderNavbar();
     fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
@@ -60,5 +90,7 @@ describe('Navbar', () => {
     expect(link.hasAttribute('aria-label')).toBe(false);
     expect(link).toHaveAccessibleName(/resume/);
     expect(link).toHaveAccessibleName(/cv/);
+    expect(link).not.toHaveAccessibleName(/PDF/);
+    expect(link.querySelector('[aria-hidden="true"]')?.textContent).toContain('↓');
   });
 });

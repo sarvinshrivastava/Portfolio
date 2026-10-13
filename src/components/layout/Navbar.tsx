@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { track } from '../../lib/analytics';
 import type { Theme } from '../../types';
@@ -22,6 +22,7 @@ export function Navbar({ theme, onThemeToggle, resumeUrl }: NavbarProps) {
   const [menuOpenAt, setMenuOpenAt] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(() => typeof window !== 'undefined' && window.scrollY > 20);
   const location = useLocation();
+  const toggleRef = useRef<HTMLButtonElement>(null);
   const menuOpen = menuOpenAt === location.pathname;
 
   useEffect(() => {
@@ -29,6 +30,13 @@ export function Navbar({ theme, onThemeToggle, resumeUrl }: NavbarProps) {
     window.addEventListener('scroll', handler, { passive: true });
     return () => window.removeEventListener('scroll', handler);
   }, []);
+
+  // Close the drawer and hand focus back to the hamburger, since the focused
+  // drawer link unmounts with the drawer.
+  const closeMenu = () => {
+    setMenuOpenAt(null);
+    toggleRef.current?.focus();
+  };
 
   return (
     <header
@@ -44,6 +52,7 @@ export function Navbar({ theme, onThemeToggle, resumeUrl }: NavbarProps) {
           to="/"
           className="font-mono text-base font-bold text-text tracking-tight hover:opacity-100"
           aria-label="Sarvin Shrivastava — home"
+          onClick={() => setMenuOpenAt(null)}
         >
           <span className="text-accent">~/</span>sarvin
         </NavLink>
@@ -76,7 +85,8 @@ export function Navbar({ theme, onThemeToggle, resumeUrl }: NavbarProps) {
               onClick={() => track('resume_open', { source: 'navbar' })}
               className="hidden md:flex bg-transparent border border-border text-text-muted text-xs font-mono px-3 h-9 rounded items-center gap-1 transition-[color,border-color] hover:text-accent hover:border-accent"
             >
-              ↓ cv<span className="sr-only"> resume (PDF, opens in new tab)</span>
+              <span aria-hidden="true">↓ </span>cv
+              <span className="sr-only"> resume (opens in new tab)</span>
             </a>
           )}
           <button
@@ -89,6 +99,7 @@ export function Navbar({ theme, onThemeToggle, resumeUrl }: NavbarProps) {
 
           {/* Hamburger */}
           <button
+            ref={toggleRef}
             className="flex md:hidden flex-col gap-[5px] bg-transparent border-none cursor-pointer p-1"
             onClick={() => setMenuOpenAt(menuOpen ? null : location.pathname)}
             aria-expanded={menuOpen}
@@ -114,9 +125,9 @@ export function Navbar({ theme, onThemeToggle, resumeUrl }: NavbarProps) {
                 <NavLink
                   to={to}
                   end={exact}
-                  onClick={() => setMenuOpenAt(null)}
+                  onClick={() => (to === location.pathname ? closeMenu() : setMenuOpenAt(null))}
                   className={({ isActive }) =>
-                    `block px-6 py-3 font-mono text-[0.9rem] transition-[color,background] ${
+                    `block px-6 py-3 font-mono text-[0.9rem] transition-[color,background] focus-visible:outline-offset-[-3px] ${
                       isActive
                         ? 'text-text bg-bg-tertiary'
                         : 'text-text-muted hover:text-text hover:bg-bg-tertiary'
@@ -136,11 +147,13 @@ export function Navbar({ theme, onThemeToggle, resumeUrl }: NavbarProps) {
                   rel="noopener noreferrer"
                   onClick={() => {
                     track('resume_open', { source: 'mobile_menu' });
-                    setMenuOpenAt(null);
+                    closeMenu();
                   }}
-                  className="block px-6 py-3 font-mono text-[0.9rem] text-text-muted transition-[color,background] hover:text-text hover:bg-bg-tertiary"
+                  className="block px-6 py-3 font-mono text-[0.9rem] text-text-muted transition-[color,background] focus-visible:outline-offset-[-3px] hover:text-text hover:bg-bg-tertiary"
                 >
-                  <span className="text-accent">$ </span>↓ resume
+                  <span className="text-accent">$ </span>
+                  <span aria-hidden="true">↓ </span>resume
+                  <span className="sr-only"> (opens in new tab)</span>
                 </a>
               </li>
             )}
