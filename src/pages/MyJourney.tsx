@@ -49,6 +49,7 @@ function fakeHash(id: string): string {
 export function MyJourney() {
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
 
   useEffect(() => {
@@ -57,7 +58,7 @@ export function MyJourney() {
         data.sort((a, b) => a.sortOrder - b.sortOrder);
         setEvents(data);
       })
-      .catch(console.warn)
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, []);
 
@@ -84,6 +85,14 @@ export function MyJourney() {
         />
 
         {loading && <p className="text-text-muted font-mono text-sm">$ loading...</p>}
+        {error && (
+          <p className="text-text-muted font-mono text-sm">
+            $ couldn't load journey — try again later
+          </p>
+        )}
+        {!loading && !error && events.length === 0 && (
+          <p className="text-text-muted font-mono text-sm">$ no commits yet</p>
+        )}
 
         <div className="max-w-[680px] mx-auto bg-bg-secondary border border-border rounded-lg overflow-hidden font-mono text-xs">
           {/* Title bar */}
@@ -122,7 +131,7 @@ export function MyJourney() {
                     initial="hidden"
                     animate="visible"
                     variants={fadeInUp}
-                    className="grid gap-x-2 cursor-pointer rounded-sm px-1 py-1 transition-colors duration-100 hover:bg-white/[0.04]"
+                    className="grid gap-x-2 cursor-pointer rounded-sm px-1 py-1 transition-colors duration-100 hover:bg-bg-tertiary"
                     style={{ gridTemplateColumns: '20px 1fr' }}
                     onClick={() => toggleExpand(event)}
                     role="button"
@@ -139,7 +148,7 @@ export function MyJourney() {
                     {/* Graph column */}
                     <div className="relative flex flex-col items-center pt-1">
                       <div
-                        className="absolute left-1/2 -translate-x-1/2 w-px bg-white/[0.13]"
+                        className="absolute left-1/2 -translate-x-1/2 w-px bg-border"
                         style={{ top: 0, bottom: isLast ? '50%' : '-4px' }}
                       />
                       <div
@@ -184,7 +193,7 @@ export function MyJourney() {
 
             {/* Footer — no blinking cursor */}
             {events.length > 0 && (
-              <div className="mt-4 pt-3 border-t border-white/[0.08] text-[11px] text-text-muted flex flex-wrap items-center gap-x-[4px]">
+              <div className="mt-4 pt-3 border-t border-border text-[11px] text-text-muted flex flex-wrap items-center gap-x-[4px]">
                 <span>{events.length} commits</span>
                 {Object.entries(FOOTER_COLORS).map(([cat, color]) => (
                   <span key={cat}>
