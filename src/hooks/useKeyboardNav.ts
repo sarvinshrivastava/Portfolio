@@ -74,6 +74,24 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
       if (a instanceof HTMLElement && a !== document.body && a !== except) a.blur();
     };
 
+    const blurIfInHeader = () => {
+      if (document.activeElement?.closest('header')) blurActive();
+    };
+
+    // Move one page left (-1) or right (+1); at either end, just drop header focus.
+    const stepPage = (pathname: string, step: -1 | 1) => {
+      const norm = pathname.toLowerCase().replace(/\/+$/, '') || '/';
+      const idx = PAGES.indexOf(norm);
+      if (idx === -1) return;
+      const target = PAGES[Math.min(PAGES.length - 1, Math.max(0, idx + step))];
+      if (target && target !== norm) {
+        blurActive();
+        navigate(target);
+      } else {
+        blurIfInHeader();
+      }
+    };
+
     const applyFocusSection = (idx: number, sections: Element[]) => {
       removeFocus();
       const el = sections[idx];
@@ -114,41 +132,21 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
       const sections = getSections();
 
       switch (e.key) {
-        case 'ArrowLeft': {
+        case 'ArrowLeft':
           e.preventDefault();
-          const norm = pathname.toLowerCase().replace(/\/+$/, '') || '/';
-          const idx = PAGES.indexOf(norm);
-          if (idx === -1) break;
-          const prev = PAGES[Math.max(0, idx - 1)];
-          if (prev && prev !== norm) {
-            blurActive();
-            navigate(prev);
-          } else if (document.activeElement?.closest('header')) {
-            blurActive();
-          }
+          stepPage(pathname, -1);
           break;
-        }
 
-        case 'ArrowRight': {
+        case 'ArrowRight':
           e.preventDefault();
-          const norm = pathname.toLowerCase().replace(/\/+$/, '') || '/';
-          const idx = PAGES.indexOf(norm);
-          if (idx === -1) break;
-          const next = PAGES[Math.min(PAGES.length - 1, idx + 1)];
-          if (next && next !== norm) {
-            blurActive();
-            navigate(next);
-          } else if (document.activeElement?.closest('header')) {
-            blurActive();
-          }
+          stepPage(pathname, 1);
           break;
-        }
 
         case 'j':
         case 'ArrowDown': {
           // ArrowDown in idle → let the browser scroll naturally
           if (e.key === 'ArrowDown' && mode === 'idle') {
-            if (document.activeElement?.closest('header')) blurActive();
+            blurIfInHeader();
             break;
           }
           e.preventDefault();
@@ -202,7 +200,7 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
         case 'ArrowUp': {
           // ArrowUp in idle → let the browser scroll naturally
           if (e.key === 'ArrowUp' && mode === 'idle') {
-            if (document.activeElement?.closest('header')) blurActive();
+            blurIfInHeader();
             break;
           }
           e.preventDefault();
