@@ -20,7 +20,7 @@ export function Navbar({ theme, onThemeToggle, resumeUrl }: NavbarProps) {
   // Storing the pathname at which the menu was opened means location change
   // automatically closes it without any setState-in-effect.
   const [menuOpenAt, setMenuOpenAt] = useState<string | null>(null);
-  const [scrolled, setScrolled] = useState(false);
+  const [scrolled, setScrolled] = useState(() => typeof window !== 'undefined' && window.scrollY > 20);
   const location = useLocation();
   const menuOpen = menuOpenAt === location.pathname;
 
@@ -73,11 +73,10 @@ export function Navbar({ theme, onThemeToggle, resumeUrl }: NavbarProps) {
               href={resumeUrl}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Download resume"
               onClick={() => track('resume_open', { source: 'navbar' })}
               className="hidden md:flex bg-transparent border border-border text-text-muted text-xs font-mono px-3 h-9 rounded items-center gap-1 transition-[color,border-color] hover:text-accent hover:border-accent"
             >
-              ↓ cv
+              ↓ cv<span className="sr-only"> resume (PDF, opens in new tab)</span>
             </a>
           )}
           <button
@@ -115,6 +114,7 @@ export function Navbar({ theme, onThemeToggle, resumeUrl }: NavbarProps) {
                 <NavLink
                   to={to}
                   end={exact}
+                  onClick={() => setMenuOpenAt(null)}
                   className={({ isActive }) =>
                     `block px-6 py-3 font-mono text-[0.9rem] transition-[color,background] ${
                       isActive
@@ -134,7 +134,10 @@ export function Navbar({ theme, onThemeToggle, resumeUrl }: NavbarProps) {
                   href={resumeUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={() => track('resume_open', { source: 'mobile_menu' })}
+                  onClick={() => {
+                    track('resume_open', { source: 'mobile_menu' });
+                    setMenuOpenAt(null);
+                  }}
                   className="block px-6 py-3 font-mono text-[0.9rem] text-text-muted transition-[color,background] hover:text-text hover:bg-bg-tertiary"
                 >
                   <span className="text-accent">$ </span>↓ resume

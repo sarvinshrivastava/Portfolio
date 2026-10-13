@@ -26,7 +26,7 @@ declare global {
   }
 }
 
-export type ResumeSource = 'navbar' | 'hero' | 'mobile_menu' | 'keyboard';
+export type ResumeSource = 'navbar' | 'mobile_menu' | 'keyboard';
 
 export type SocialNetwork = 'github' | 'linkedin' | 'x' | 'medium' | 'email';
 

@@ -1,12 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAbout } from '../../context/AboutContext';
-import { track } from '../../lib/analytics';
 
 export function Hero() {
   const about = useAbout();
   const roles = useMemo(() => about?.roles ?? [], [about]);
-  const resumeUrl = about?.resumeUrl;
   const [roleIndex, setRoleIndex] = useState(0);
   const [displayed, setDisplayed] = useState('');
   const [deleting, setDeleting] = useState(false);
@@ -93,18 +91,6 @@ export function Hero() {
             >
               Get In Touch
             </a>
-            {resumeUrl && (
-              <a
-                href={resumeUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-keynav-element
-                onClick={() => track('resume_open', { source: 'hero' })}
-                className="inline-flex items-center font-mono text-sm text-text-muted border border-border px-6 py-3 rounded transition-all duration-200 hover:opacity-100 hover:text-text hover:border-text-muted hover:-translate-y-px"
-              >
-                ↓ resume
-              </a>
-            )}
           </div>
         </div>
       </div>

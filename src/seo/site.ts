@@ -300,7 +300,7 @@ ${sectionHeading(CONNECT_HEADING, 'h2')}
 }
 
 function hero(): string {
-  // Hero.tsx, before the roles typewriter starts and before Notion returns resumeUrl.
+  // Hero.tsx, before the roles typewriter starts.
   return `<section class="min-h-screen flex items-center pt-24 pb-16 max-[480px]:pt-20 max-[480px]:pb-12" aria-label="Introduction">
 <div class="container grid grid-cols-2 gap-16 items-center max-[900px]:grid-cols-1 max-[900px]:gap-10">
 <div class="bg-bg-secondary border border-border rounded-lg overflow-hidden font-mono text-sm max-[900px]:-order-1">
