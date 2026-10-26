@@ -177,19 +177,21 @@ function snapshot(): Plugin {
   };
 }
 
+const NOTION_CACHE = 'https://notion-cache.vps.sarvinshrivastava.space';
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss(), umami(), seo(), snapshot()],
   server: {
     proxy: {
-      '/api/database': 'https://notion-cache.vps.sarvinshrivastava.space',
-      '/api/pages': 'https://notion-cache.vps.sarvinshrivastava.space',
-      '/resume.pdf': { target: 'https://notion-cache.vps.sarvinshrivastava.space', changeOrigin: true },
+      '/api/database': NOTION_CACHE,
+      '/api/pages': NOTION_CACHE,
+      '/resume.pdf': { target: NOTION_CACHE, changeOrigin: true },
     },
   },
   preview: {
     proxy: {
-      '/resume.pdf': { target: 'https://notion-cache.vps.sarvinshrivastava.space', changeOrigin: true },
+      '/resume.pdf': { target: NOTION_CACHE, changeOrigin: true },
     },
   },
 });

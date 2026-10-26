@@ -1,4 +1,5 @@
 import {
+  DATASETS,
   parseAbout,
   parseProjects,
   parseTimeline,
@@ -32,8 +33,6 @@ export interface FetchSnapshotOptions {
   sleep?: (ms: number) => Promise<unknown>;
   retries?: number[];
 }
-
-const DATASETS: Dataset[] = ['about', 'projects', 'timeline', 'experience'];
 
 async function fetchResults(
   dataset: Dataset,

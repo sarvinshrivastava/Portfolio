@@ -1,6 +1,7 @@
 import { trackOnce, type Dataset } from '../lib/analytics';
 import type { About, Project, TimelineEvent, Experience } from '../types';
 import {
+  DATASETS,
   parseAbout,
   parseProjects,
   parseTimeline,
@@ -42,15 +43,13 @@ try {
   // storage blocked — nothing to clean
 }
 
-const DATA_KEYS = ['about', 'projects', 'timeline', 'experience'] as const;
-
 function readBundle(): Bundle | null {
   try {
     const raw = localStorage.getItem(BUNDLE_KEY);
     if (!raw) return null;
     const b = JSON.parse(raw);
     if (!b || b.cv !== CV || !Number.isFinite(b.ts)) return null;
-    if (!DATA_KEYS.every(k => k in b)) return null;
+    if (!DATASETS.every(k => k in b)) return null;
     return b as Bundle;
   } catch {
     return null;
@@ -85,7 +84,7 @@ const DB_MAP: Record<Dataset, string> = {
  * Deduped per dataset: with the cache down, one visitor touring four routes
  * would otherwise emit an event per route and again after every cache lapse.
  */
-async function notionQuery(page: Dataset): Promise<{ results: NotionPage[] }> {
+async function notionQuery(page: Dataset): Promise<NotionPage[]> {
   const reportKey = `data_load_error:${page}`;
   const fail = (status: number) =>
     trackOnce(reportKey, 'data_load_error', { dataset: page, status });
@@ -132,7 +131,7 @@ async function notionQuery(page: Dataset): Promise<{ results: NotionPage[] }> {
         status: -2,
       });
     }
-    return body as { results: NotionPage[] };
+    return body.results as NotionPage[];
   } finally {
     clearTimeout(timer);
   }
@@ -165,7 +164,7 @@ function loadSnapshot(): Promise<SnapshotData | null> {
       if (
         !s ||
         s.v !== 1 ||
-        !DATA_KEYS.every(k => k in s) ||
+        !DATASETS.every(k => k in s) ||
         !Array.isArray(s.projects) ||
         !Array.isArray(s.timeline) ||
         !Array.isArray(s.experience)
@@ -197,22 +196,23 @@ async function resolveSiteData(): Promise<SiteData> {
   // `lastFailure` is set only after a real live attempt, so this window never slides.
   if (!lastFailure || Date.now() - lastFailure.at >= RETRY_AFTER_FAILURE_MS) {
     const settled = await Promise.allSettled([
-      notionQuery('about').then(r => parseAbout(r.results)),
-      notionQuery('projects').then(r => parseProjects(r.results)),
-      notionQuery('timeline').then(r => parseTimeline(r.results)),
-      notionQuery('experience').then(r => parseExperience(r.results)),
+      notionQuery('about').then(parseAbout),
+      notionQuery('projects').then(parseProjects),
+      notionQuery('timeline').then(parseTimeline),
+      notionQuery('experience').then(parseExperience),
     ]);
+    const [about, projects, timeline, experience] = settled;
     if (
-      settled[0].status === 'fulfilled' &&
-      settled[1].status === 'fulfilled' &&
-      settled[2].status === 'fulfilled' &&
-      settled[3].status === 'fulfilled'
+      about.status === 'fulfilled' &&
+      projects.status === 'fulfilled' &&
+      timeline.status === 'fulfilled' &&
+      experience.status === 'fulfilled'
     ) {
       const data: SiteData = {
-        about: settled[0].value,
-        projects: settled[1].value,
-        timeline: settled[2].value,
-        experience: settled[3].value,
+        about: about.value,
+        projects: projects.value,
+        timeline: timeline.value,
+        experience: experience.value,
       };
       writeBundle(data, Date.now());
       return data;
@@ -262,8 +262,18 @@ function loadSiteData(): Promise<SiteData> {
   return siteData;
 }
 
-export const fetchAbout = (): Promise<About> => loadSiteData().then(d => d.about);
-export const fetchProjects = (): Promise<Project[]> => loadSiteData().then(d => d.projects);
-export const fetchTimeline = (): Promise<TimelineEvent[]> => loadSiteData().then(d => d.timeline);
-export const fetchExperience = (): Promise<Experience[]> =>
-  loadSiteData().then(d => d.experience);
+export function fetchAbout(): Promise<About> {
+  return loadSiteData().then(d => d.about);
+}
+
+export function fetchProjects(): Promise<Project[]> {
+  return loadSiteData().then(d => d.projects);
+}
+
+export function fetchTimeline(): Promise<TimelineEvent[]> {
+  return loadSiteData().then(d => d.timeline);
+}
+
+export function fetchExperience(): Promise<Experience[]> {
+  return loadSiteData().then(d => d.experience);
+}

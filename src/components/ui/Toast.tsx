@@ -50,7 +50,7 @@ function messageFor({ reason, savedAt }: FallbackInfo): string {
  * is announced; the visible box exists only while shown.
  */
 export function FallbackToast() {
-  const [info, setInfo] = useState<FallbackInfo | null>(null);
+  const [message, setMessage] = useState('');
   const [visible, setVisible] = useState(false);
   const [paused, setPaused] = useState(false);
 
@@ -58,7 +58,7 @@ export function FallbackToast() {
     const show = (detail: FallbackInfo | null) => {
       if (!detail || alreadyShown()) return;
       markShown();
-      setInfo(detail);
+      setMessage(messageFor(detail));
       setVisible(true);
     };
     show(getLastFallback());
@@ -76,7 +76,6 @@ export function FallbackToast() {
   const hide = () => setVisible(false);
   const pause = () => setPaused(true);
   const resume = () => setPaused(false);
-  const message = info ? messageFor(info) : '';
 
   return (
     <>

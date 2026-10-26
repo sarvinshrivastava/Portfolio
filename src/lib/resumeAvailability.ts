@@ -14,19 +14,17 @@ let probe: Promise<boolean> | null = null;
 /** One HEAD request per page load. */
 export function checkResume(): Promise<boolean> {
   probe ??= (async () => {
+    let status: number;
     try {
       const res = await fetch(RESUME_PATH, { method: 'HEAD' });
-      if (res.ok && (res.headers.get('content-type') ?? '').includes('application/pdf')) {
-        known = true;
-      } else {
-        known = false;
-        trackOnce('resume_unavailable', 'resume_unavailable', { status: res.status });
-      }
+      if (res.ok && (res.headers.get('content-type') ?? '').includes('application/pdf')) return true;
+      status = res.status;
     } catch {
-      known = false;
-      trackOnce('resume_unavailable', 'resume_unavailable', { status: -1 });
+      status = -1;
     }
-    return known;
+    known = false;
+    trackOnce('resume_unavailable', 'resume_unavailable', { status });
+    return false;
   })();
   return probe;
 }

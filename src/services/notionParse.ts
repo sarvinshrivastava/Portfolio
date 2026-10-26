@@ -1,4 +1,4 @@
-import type { About, Project, TimelineEvent, Experience } from '../types';
+import type { About, Dataset, Project, TimelineEvent, Experience } from '../types';
 
 /**
  * Pure Notion-to-model parsers: no `import.meta`, DOM or analytics, so the
@@ -7,6 +7,9 @@ import type { About, Project, TimelineEvent, Experience } from '../types';
  *
  * Bump `CV` in notion.ts whenever a parser changes the model shape.
  */
+
+/** The four datasets a bundle or snapshot must carry together. */
+export const DATASETS: readonly Dataset[] = ['about', 'projects', 'timeline', 'experience'];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type NotionPage = { id: string; properties: Record<string, any> };
