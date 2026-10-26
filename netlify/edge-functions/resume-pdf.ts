@@ -111,9 +111,17 @@ export function createHandler({
           bytes.set(chunk, offset);
           offset += chunk.byteLength;
         }
-        // A body that closed early must never be cached as a 200.
+        // A body that closed early must never be cached as a 200. Only an
+        // unencoded body can be compared: fetch decompresses gzip/br, while
+        // content-length stays the compressed size.
+        const encoding = (upstream.headers.get('content-encoding') ?? '').trim().toLowerCase();
         const declared = upstream.headers.get('content-length');
-        if (declared !== null && /^\d+$/.test(declared.trim()) && Number(declared) !== total) {
+        if (
+          (encoding === '' || encoding === 'identity') &&
+          declared !== null &&
+          /^\d+$/.test(declared.trim()) &&
+          Number(declared) !== total
+        ) {
           return fail();
         }
         if (!PDF_MAGIC.every((b, i) => bytes[i] === b)) return fail();

@@ -101,6 +101,25 @@ describe('resume-pdf edge gate', () => {
     expect(res.status).toBe(405);
   });
 
+  it('skips the length check for an encoded upstream body', async () => {
+    const body = new Uint8Array(100).fill(0x41);
+    body.set(enc.encode('%PDF-'));
+    for (const encoding of ['gzip', ' BR ']) {
+      const res = await createHandler({
+        fetchImpl: asFetch(async () =>
+          upstreamRes(body, { headers: { 'content-length': '40', 'content-encoding': encoding } }),
+        ),
+      })(get());
+      expect(res.status).toBe(200);
+    }
+    const identity = await createHandler({
+      fetchImpl: asFetch(async () =>
+        upstreamRes(body, { headers: { 'content-length': '40', 'content-encoding': 'Identity' } }),
+      ),
+    })(get());
+    expect(identity.status).toBe(503);
+  });
+
   it('answers 503 when content-length disagrees with the bytes read, 200 when it matches', async () => {
     const body = (n: number) => {
       const b = new Uint8Array(n).fill(0x41);
