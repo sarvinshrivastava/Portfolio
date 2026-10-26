@@ -80,7 +80,7 @@ export async function fetchSnapshot({
   }
 
   const [about, projects, timeline, experience] = await Promise.all(
-    DATASETS.map(d => fetchResults(d, `${base}/api/database/${ids[d]}`, fetchImpl, sleep, retries)),
+    DATASETS.map(d => fetchResults(d, `${base}/api/database/${encodeURIComponent(ids[d])}`, fetchImpl, sleep, retries)),
   );
 
   const snapshot: Snapshot = {

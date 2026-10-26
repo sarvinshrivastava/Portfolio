@@ -34,6 +34,46 @@ export function safeUrl(value: unknown): string | undefined {
   }
 }
 
+/**
+ * Checks saved data (a localStorage bundle or the build snapshot) before the
+ * site renders it: `about` must be an object and the lists arrays, otherwise
+ * the data counts as absent. The URL fields go through `safeUrl` again, so a
+ * tampered copy cannot put a `javascript:` URL into an href. Returns null when
+ * the data is unusable.
+ */
+export function sanitizeSaved(raw: unknown): {
+  about: About;
+  projects: Project[];
+  timeline: TimelineEvent[];
+  experience: Experience[];
+} | null {
+  const s = raw as Record<string, unknown> | null;
+  if (!s || typeof s !== 'object') return null;
+  const { about, projects, timeline, experience } = s;
+  if (!about || typeof about !== 'object' || Array.isArray(about)) return null;
+  if (!Array.isArray(projects) || !Array.isArray(timeline) || !Array.isArray(experience)) {
+    return null;
+  }
+  if (projects.some(p => !p || typeof p !== 'object')) return null;
+  const a = about as About;
+  return {
+    about: {
+      ...a,
+      github: safeUrl(a.github),
+      linkedin: safeUrl(a.linkedin),
+      x: safeUrl(a.x),
+      medium: safeUrl(a.medium),
+    },
+    projects: (projects as Project[]).map(p => ({
+      ...p,
+      githubUrl: safeUrl(p.githubUrl),
+      imageUrl: safeUrl(p.imageUrl),
+    })),
+    timeline: timeline as TimelineEvent[],
+    experience: experience as Experience[],
+  };
+}
+
 export function parseAbout(results: NotionPage[]): About {
   const p = results[0]?.properties ?? {};
   return {

@@ -37,7 +37,7 @@ describe('resume availability', () => {
     const { checkResume } = await fresh();
 
     expect(await checkResume()).toBe(true);
-    expect(fetchMock).toHaveBeenCalledWith('/resume.pdf', { method: 'HEAD' });
+    expect(fetchMock).toHaveBeenCalledWith('/resume.pdf', expect.objectContaining({ method: 'HEAD' }));
     expect(analytics.trackOnce).not.toHaveBeenCalled();
   });
 
@@ -80,6 +80,42 @@ describe('resume availability', () => {
     await Promise.all([checkResume(), checkResume()]);
     await checkResume();
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('treats a hung probe as unavailable after 5 s, reporting -1 once', async () => {
+    vi.useFakeTimers();
+    fetchMock.mockImplementation(
+      (_url: string, init?: RequestInit) =>
+        new Promise((_, reject) => {
+          init?.signal?.addEventListener('abort', () =>
+            reject(new DOMException('Aborted', 'AbortError')),
+          );
+        }),
+    );
+    const { checkResume, isResumeAvailable } = await fresh();
+
+    const pending = checkResume();
+    await vi.advanceTimersByTimeAsync(4999);
+    expect(isResumeAvailable()).toBe(true);
+    await vi.advanceTimersByTimeAsync(1);
+
+    expect(await pending).toBe(false);
+    expect(isResumeAvailable()).toBe(false);
+    expect(analytics.trackOnce).toHaveBeenCalledTimes(1);
+    expect(analytics.trackOnce).toHaveBeenCalledWith('resume_unavailable', 'resume_unavailable', {
+      status: -1,
+    });
+    vi.useRealTimers();
+  });
+
+  it('a hook mounted after the probe failed never renders the link', async () => {
+    fetchMock.mockResolvedValue(head(503, 'text/plain'));
+    const { checkResume, renderHook, useResumeAvailable } = await fresh();
+    await checkResume();
+
+    const { result, unmount } = renderHook(() => useResumeAvailable());
+    expect(result.current).toBe(false);
+    unmount();
   });
 
   it('the real hook starts true and becomes false on a 503', async () => {

@@ -16,6 +16,8 @@ describe('netlify.toml resume proxy', () => {
     const block = toml.slice(resume, spa);
     expect(block).toMatch(/^\s*status\s*=\s*200\s*$/m);
     expect(block).toMatch(/^\s*force\s*=\s*true\s*$/m);
-    expect(block).toMatch(/^\s*to\s*=\s*"https:\/\/[^"]+\/resume\.pdf"\s*$/m);
+    expect(block).toMatch(
+      /^\s*to\s*=\s*"https:\/\/notion-cache\.vps\.sarvinshrivastava\.space\/resume\.pdf"\s*$/m,
+    );
   });
 });

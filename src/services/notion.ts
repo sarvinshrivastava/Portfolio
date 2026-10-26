@@ -1,11 +1,11 @@
 import { trackOnce, type Dataset } from '../lib/analytics';
 import type { About, Project, TimelineEvent, Experience } from '../types';
 import {
-  DATASETS,
   parseAbout,
   parseProjects,
   parseTimeline,
   parseExperience,
+  sanitizeSaved,
   type NotionPage,
 } from './notionParse';
 
@@ -49,8 +49,8 @@ function readBundle(): Bundle | null {
     if (!raw) return null;
     const b = JSON.parse(raw);
     if (!b || b.cv !== CV || !Number.isFinite(b.ts)) return null;
-    if (!DATASETS.every(k => k in b)) return null;
-    return b as Bundle;
+    const data = sanitizeSaved(b);
+    return data && { cv: b.cv, ts: b.ts, ...data };
   } catch {
     return null;
   }
@@ -145,7 +145,7 @@ export function getLastFallback(): FallbackInfo | null {
   return lastFallback;
 }
 
-export function setLastFallback(info: FallbackInfo | null) {
+export function setLastFallback(info: FallbackInfo | null): void {
   lastFallback = info;
 }
 
@@ -161,23 +161,8 @@ function loadSnapshot(): Promise<SnapshotData | null> {
       const r = await fetch('/data/snapshot.json');
       if (!r.ok || !(r.headers.get('content-type') ?? '').includes('json')) return null;
       const s = await r.json();
-      if (
-        !s ||
-        s.v !== 1 ||
-        !DATASETS.every(k => k in s) ||
-        !Array.isArray(s.projects) ||
-        !Array.isArray(s.timeline) ||
-        !Array.isArray(s.experience)
-      ) {
-        return null;
-      }
-      return {
-        ts: Date.parse(s.generatedAt),
-        about: s.about,
-        projects: s.projects,
-        timeline: s.timeline,
-        experience: s.experience,
-      };
+      const data = s?.v === 1 ? sanitizeSaved(s) : null;
+      return data && { ts: Date.parse(s.generatedAt), ...data };
     } catch {
       return null;
     }

@@ -143,6 +143,25 @@ describe('seo plugin build output', () => {
       expect(snap.experience).toHaveLength(2);
     }, 60_000);
 
+    it('emits data/snapshot.json on Netlify (NETLIFY=true) without SNAPSHOT', async () => {
+      stubEnv({ NETLIFY: 'true' });
+      const byId: Record<string, unknown> = {
+        ida: aboutPages(),
+        idp: projectPages,
+        idt: timelinePages,
+        ide: experiencePages,
+      };
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string) => {
+          const id = String(url).split('/').pop() as string;
+          return new Response(JSON.stringify({ results: byId[id] }), { status: 200 });
+        }),
+      );
+      const read = await buildTo('production');
+      expect(JSON.parse(read('data/snapshot.json')).v).toBe(1);
+    }, 60_000);
+
     it('rejects the build under SNAPSHOT=1 when the cache answers 404', async () => {
       stubEnv({ SNAPSHOT: '1' });
       vi.stubGlobal(

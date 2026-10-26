@@ -82,7 +82,7 @@ export function FallbackToast() {
       <span role="status" aria-live="polite" className="sr-only">{visible ? message : ''}</span>
       {visible && (
         <div
-          className="fixed bottom-4 right-4 max-[480px]:left-4 z-50 flex items-start gap-3 bg-bg-secondary border border-border rounded-[var(--radius)] font-mono text-sm px-4 py-3 motion-safe:transition-opacity motion-safe:duration-200"
+          className="fixed bottom-4 right-4 max-[480px]:left-4 z-50 flex items-start gap-3 bg-bg-secondary border border-border rounded-[var(--radius)] font-mono text-sm px-4 py-3"
           onMouseEnter={pause}
           onMouseLeave={resume}
           onFocus={pause}
@@ -93,7 +93,7 @@ export function FallbackToast() {
             type="button"
             aria-label="Dismiss"
             onClick={hide}
-            className="bg-transparent border-none text-text-muted cursor-pointer leading-none hover:text-text"
+            className="min-w-6 min-h-6 inline-flex items-center justify-center bg-transparent border-none text-text-muted cursor-pointer leading-none hover:text-text"
           >
             ×
           </button>

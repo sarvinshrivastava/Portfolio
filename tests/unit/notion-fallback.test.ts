@@ -244,6 +244,42 @@ describe('group commit with saved-data fallback', () => {
     await expect(fetchAbout()).rejects.toThrow();
   });
 
+  it.each([
+    ['about: null', { about: null }],
+    ['projects: "x"', { projects: 'x' }],
+  ])('ignores a saved bundle with %s', async (_label, patch) => {
+    storage.setItem(
+      'notion_bundle',
+      JSON.stringify({ ...JSON.parse(bundleJson(Date.now() - 10 * 60_000)), ...patch }),
+    );
+    route({ about: status(500) });
+    const { fetchAbout } = await loadNotion();
+
+    await expect(fetchAbout()).rejects.toThrow();
+  });
+
+  it('ignores a snapshot whose about is null', async () => {
+    route({
+      about: status(500),
+      snapshot: () => json({ ...snapshotBody(new Date().toISOString()), about: null }),
+    });
+    const { fetchAbout } = await loadNotion();
+
+    await expect(fetchAbout()).rejects.toThrow();
+  });
+
+  it('drops a javascript: url from saved data', async () => {
+    const saved = JSON.parse(bundleJson(Date.now() - 10 * 60_000));
+    saved.about.github = 'javascript:alert(1)';
+    saved.projects[0].githubUrl = 'javascript:alert(2)';
+    storage.setItem('notion_bundle', JSON.stringify(saved));
+    route({ about: status(500) });
+    const { fetchAbout, fetchProjects } = await loadNotion();
+
+    expect((await fetchAbout()).github).toBeUndefined();
+    expect((await fetchProjects())[0].githubUrl).toBeUndefined();
+  });
+
   it('exposes setLastFallback through getLastFallback', async () => {
     const { getLastFallback, setLastFallback } = await loadNotion();
 

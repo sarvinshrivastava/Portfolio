@@ -8,6 +8,8 @@ import { trackOnce } from './analytics';
  * answers with HTML), a visible button would lead to a dead page.
  */
 
+const PROBE_TIMEOUT_MS = 5000;
+
 let known = true;
 let probe: Promise<boolean> | null = null;
 
@@ -16,9 +18,18 @@ export function checkResume(): Promise<boolean> {
   probe ??= (async () => {
     let status: number;
     try {
-      const res = await fetch(RESUME_PATH, { method: 'HEAD' });
-      if (res.ok && (res.headers.get('content-type') ?? '').includes('application/pdf')) return true;
-      status = res.status;
+      // A hung proxy would otherwise leave a dead link on screen.
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), PROBE_TIMEOUT_MS);
+      try {
+        const res = await fetch(RESUME_PATH, { method: 'HEAD', signal: ctrl.signal });
+        if (res.ok && (res.headers.get('content-type') ?? '').includes('application/pdf')) {
+          return true;
+        }
+        status = res.status;
+      } finally {
+        clearTimeout(timer);
+      }
     } catch {
       status = -1;
     }
@@ -34,9 +45,12 @@ export function isResumeAvailable(): boolean {
   return known;
 }
 
-/** Optimistic (`true`) first, so the first paint matches the static shell. */
+/**
+ * Optimistic (`true`) until the probe fails, so the first paint matches the
+ * static shell; a component mounted after a failed probe never shows the link.
+ */
 export function useResumeAvailable(): boolean {
-  const [available, setAvailable] = useState(true);
+  const [available, setAvailable] = useState(() => isResumeAvailable());
   useEffect(() => {
     let live = true;
     checkResume().then(ok => {
