@@ -80,25 +80,52 @@ describe('resume-pdf edge gate', () => {
   });
 
   it.each(['GET', 'HEAD'])(
-    'redirects a %s with a query string to /resume.pdf, no upstream call',
+    'serves a %s with a query string the gated PDF, never stored at the edge',
     async method => {
       const fetchImpl = asFetch(async () => upstreamRes(PDF));
       const res = await createHandler({ fetchImpl })(
         get('https://x.test/resume.pdf?x=1', { method }),
       );
 
-      expect(res.status).toBe(301);
-      expect(res.headers.get('location')).toBe('/resume.pdf');
-      expect(res.headers.get('x-content-type-options')).toBe('nosniff');
-      expect(fetchImpl).not.toHaveBeenCalled();
+      expect(res.status).toBe(200);
+      expect(res.headers.get('content-type')).toBe('application/pdf');
+      expect(res.headers.get('netlify-cdn-cache-control')).toBe('no-store');
+      expect(res.headers.has('location')).toBe(false);
+      expect(fetchImpl).toHaveBeenCalledTimes(1);
+      expect(fetchImpl).toHaveBeenCalledWith(UPSTREAM, expect.anything());
+      if (method === 'GET') expect(new Uint8Array(await res.arrayBuffer())).toEqual(PDF);
+      else expect(res.body).toBeNull();
     },
   );
 
-  it('answers 405 before the query redirect for other methods', async () => {
-    const res = await createHandler({ fetchImpl: asFetch(async () => upstreamRes(PDF)) })(
-      get('https://x.test/resume.pdf?x=1', { method: 'POST' }),
-    );
-    expect(res.status).toBe(405);
+  it('answers 405 for other methods, with or without a query string', async () => {
+    for (const url of ['https://x.test/resume.pdf?x=1', 'https://x.test/resume.pdf']) {
+      const res = await createHandler({ fetchImpl: asFetch(async () => upstreamRes(PDF)) })(
+        get(url, { method: 'POST' }),
+      );
+      expect(res.status).toBe(405);
+    }
+  });
+
+  it('never answers with a redirect', async () => {
+    const ok = () => asFetch(async () => upstreamRes(PDF));
+    const responses = [
+      await createHandler({ fetchImpl: ok() })(get()),
+      await createHandler({ fetchImpl: ok() })(get('https://x.test/resume.pdf?x=1')),
+      await createHandler({ fetchImpl: ok() })(
+        get('https://x.test/resume.pdf?x=1', { method: 'HEAD' }),
+      ),
+      await createHandler({ fetchImpl: ok() })(
+        get('https://x.test/resume.pdf?x=1', { method: 'POST' }),
+      ),
+      await createHandler({
+        fetchImpl: asFetch(async () => upstreamRes('x', { status: 503 })),
+      })(get('https://x.test/resume.pdf?x=1')),
+    ];
+    for (const res of responses) {
+      expect(res.status < 300 || res.status >= 400).toBe(true);
+      expect(res.headers.has('location')).toBe(false);
+    }
   });
 
   it('skips the length check for an encoded upstream body', async () => {
