@@ -14,6 +14,9 @@
   --accent: #F5A623;
   --accent-dim: rgba(245, 166, 35, 0.15);
   color-scheme: dark;
+
+  /* Focus ring: own group, kept apart from the tokens above */
+  --focus-ring: #F5A623;
 }
 
 [data-theme='light'] {
@@ -27,6 +30,9 @@
   --accent: #F5A623;
   --accent-dim: rgba(245, 166, 35, 0.15);
   color-scheme: light;
+
+  /* Focus ring: own group, kept apart from the tokens above */
+  --focus-ring: #A86A0C;
 }
 
 /* ── Tailwind theme tokens ───────────────────────── */
@@ -78,6 +84,11 @@
 
   a:hover {
     opacity: 0.75;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 3px;
   }
 
   ::selection {

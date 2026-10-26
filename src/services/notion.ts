@@ -1,33 +1,67 @@
 import { trackOnce, type Dataset } from '../lib/analytics';
 import type { About, Project, TimelineEvent, Experience } from '../types';
+import {
+  parseAbout,
+  parseProjects,
+  parseTimeline,
+  parseExperience,
+  sanitizeSaved,
+  type NotionPage,
+} from './notionParse';
 
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const BUNDLE_KEY = 'notion_bundle';
+/** Bump whenever a parser in notionParse.ts changes the model shape. */
+const CV = 1;
+const LEGACY_KEYS = ['notion_about', 'notion_projects', 'notion_timeline', 'notion_experience'];
+const REQUEST_TIMEOUT_MS = 8000;
+const RETRY_AFTER_FAILURE_MS = 60_000;
 
-function getCache<T>(key: string): T | null {
+interface SiteData {
+  about: About;
+  projects: Project[];
+  timeline: TimelineEvent[];
+  experience: Experience[];
+}
+
+interface Bundle extends SiteData {
+  cv: number;
+  ts: number;
+}
+
+type FallbackReason = 'rate_limited' | 'unavailable';
+type FallbackSource = 'local' | 'snapshot';
+
+export interface FallbackInfo {
+  reason: FallbackReason;
+  savedAt: number;
+}
+
+try {
+  for (const key of LEGACY_KEYS) localStorage.removeItem(key);
+} catch {
+  // storage blocked — nothing to clean
+}
+
+function readBundle(): Bundle | null {
   try {
-    const item = localStorage.getItem(key);
-    if (!item) return null;
-    const { data, ts } = JSON.parse(item);
-    if (Date.now() - ts > CACHE_TTL) {
-      localStorage.removeItem(key);
-      return null;
-    }
-    return data as T;
+    const raw = localStorage.getItem(BUNDLE_KEY);
+    if (!raw) return null;
+    const b = JSON.parse(raw);
+    if (!b || b.cv !== CV || !Number.isFinite(b.ts)) return null;
+    const data = sanitizeSaved(b);
+    return data && { cv: b.cv, ts: b.ts, ...data };
   } catch {
     return null;
   }
 }
 
-function setCache<T>(key: string, data: T) {
+function writeBundle(data: SiteData, ts: number) {
   try {
-    localStorage.setItem(key, JSON.stringify({ data, ts: Date.now() }));
+    localStorage.setItem(BUNDLE_KEY, JSON.stringify({ cv: CV, ts, ...data }));
   } catch {
-    // localStorage unavailable — ignore
+    // storage full or blocked — ignore
   }
-}
-
-function richText(blocks: { plain_text: string }[] | undefined): string {
-  return blocks?.map(b => b.plain_text).join('') ?? '';
 }
 
 const CACHE_API = import.meta.env.VITE_NOTION_CACHE_URL ?? '';
@@ -39,164 +73,192 @@ const DB_MAP: Record<Dataset, string> = {
   experience: import.meta.env.VITE_NOTION_DB_EXPERIENCE ?? '',
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type NotionPage = { id: string; properties: Record<string, any> };
-
-/**
- * Notion hands us URLs an editor typed, and one of them reaches `window.open`
- * in useKeyboardNav — which, unlike React's `href` handling, does NOT block
- * `javascript:`. Anything that is not plain http(s) is dropped at the source so
- * every consumer inherits the check.
- */
-function safeUrl(value: unknown): string | undefined {
-  if (typeof value !== 'string' || !value) return undefined;
-  try {
-    const { protocol } = new URL(value);
-    return protocol === 'https:' || protocol === 'http:' ? value : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 /**
  * Every failure here reports `data_load_error` before throwing — a dead Notion
  * cache renders as a silently empty site, which no pageview count would reveal.
  * Synthetic statuses distinguish the non-HTTP failures: 0 = the DB id is
  * missing from the build, -1 = the request never reached the cache (offline,
- * DNS, CORS), -2 = the cache answered 200 with a body that is not JSON.
+ * DNS, CORS, timeout), -2 = the cache answered 200 with a body that is not JSON
+ * or has no `results` array. Every thrown error carries the same `status`.
  *
  * Deduped per dataset: with the cache down, one visitor touring four routes
  * would otherwise emit an event per route and again after every cache lapse.
  */
-async function notionQuery(page: Dataset): Promise<{ results: NotionPage[] }> {
+async function notionQuery(page: Dataset): Promise<NotionPage[]> {
   const reportKey = `data_load_error:${page}`;
+  const fail = (status: number) =>
+    trackOnce(reportKey, 'data_load_error', { dataset: page, status });
   const dbId = DB_MAP[page];
   if (!dbId) {
-    trackOnce(reportKey, 'data_load_error', { dataset: page, status: 0 });
-    throw new Error(
-      `VITE_NOTION_DB_${page.toUpperCase()} is not set — add it to your .env and Netlify environment variables`,
+    fail(0);
+    throw Object.assign(
+      new Error(
+        `VITE_NOTION_DB_${page.toUpperCase()} is not set — add it to your env file and Netlify environment variables`,
+      ),
+      { status: 0 },
     );
   }
 
-  let res: Response;
+  // One hanging dataset would otherwise stall every page through allSettled.
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
   try {
-    res = await fetch(`${CACHE_API}/api/database/${dbId}`);
-  } catch (err) {
-    trackOnce(reportKey, 'data_load_error', { dataset: page, status: -1 });
-    throw err;
+    let res: Response;
+    try {
+      res = await fetch(`${CACHE_API}/api/database/${dbId}`, { signal: ctrl.signal });
+    } catch (err) {
+      fail(-1);
+      throw Object.assign(err as object, { status: -1 });
+    }
+
+    if (!res.ok) {
+      fail(res.status);
+      throw Object.assign(new Error(`Notion cache query failed: ${res.status}`), {
+        status: res.status,
+      });
+    }
+
+    let body: { results?: unknown };
+    try {
+      body = await res.json();
+    } catch (err) {
+      fail(-2);
+      throw Object.assign(err as object, { status: -2 });
+    }
+    if (!Array.isArray(body?.results)) {
+      fail(-2);
+      throw Object.assign(new Error('Notion cache answered without a results array'), {
+        status: -2,
+      });
+    }
+    return body.results as NotionPage[];
+  } finally {
+    clearTimeout(timer);
   }
+}
 
-  if (!res.ok) {
-    trackOnce(reportKey, 'data_load_error', { dataset: page, status: res.status });
-    throw new Error(`Notion cache query failed: ${res.status}`);
+// ── Saved-data fallback ────────────────────────────────────────────────────
+let lastFallback: FallbackInfo | null = null;
+
+/** Module store, so a listener that mounts after the event still sees it. */
+export function getLastFallback(): FallbackInfo | null {
+  return lastFallback;
+}
+
+export function setLastFallback(info: FallbackInfo | null): void {
+  lastFallback = info;
+}
+
+interface SnapshotData extends SiteData {
+  ts: number;
+}
+
+let snapshotMemo: Promise<SnapshotData | null> | null = null;
+
+function loadSnapshot(): Promise<SnapshotData | null> {
+  snapshotMemo ??= (async () => {
+    try {
+      const r = await fetch('/data/snapshot.json');
+      if (!r.ok || !(r.headers.get('content-type') ?? '').includes('json')) return null;
+      const s = await r.json();
+      const data = s?.v === 1 ? sanitizeSaved(s) : null;
+      return data && { ts: Date.parse(s.generatedAt), ...data };
+    } catch {
+      return null;
+    }
+  })();
+  return snapshotMemo;
+}
+
+// ── Site data (all four datasets commit together) ──────────────────────────
+let siteData: Promise<SiteData> | null = null;
+let lastFailure: { at: number; reason: FallbackReason; error: unknown } | null = null;
+
+async function resolveSiteData(): Promise<SiteData> {
+  const cached = readBundle();
+  if (cached && cached.ts <= Date.now() && Date.now() - cached.ts <= CACHE_TTL) return cached;
+
+  // `lastFailure` is set only after a real live attempt, so this window never slides.
+  if (!lastFailure || Date.now() - lastFailure.at >= RETRY_AFTER_FAILURE_MS) {
+    const settled = await Promise.allSettled([
+      notionQuery('about').then(parseAbout),
+      notionQuery('projects').then(parseProjects),
+      notionQuery('timeline').then(parseTimeline),
+      notionQuery('experience').then(parseExperience),
+    ]);
+    const [about, projects, timeline, experience] = settled;
+    if (
+      about.status === 'fulfilled' &&
+      projects.status === 'fulfilled' &&
+      timeline.status === 'fulfilled' &&
+      experience.status === 'fulfilled'
+    ) {
+      const data: SiteData = {
+        about: about.value,
+        projects: projects.value,
+        timeline: timeline.value,
+        experience: experience.value,
+      };
+      writeBundle(data, Date.now());
+      return data;
+    }
+    const rejected = settled.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+    lastFailure = {
+      at: Date.now(),
+      reason: rejected.some(r => (r.reason as { status?: number })?.status === 429)
+        ? 'rate_limited'
+        : 'unavailable',
+      error: rejected[0].reason,
+    };
   }
+  const failure = lastFailure;
 
-  try {
-    return await res.json();
-  } catch (err) {
-    trackOnce(reportKey, 'data_load_error', { dataset: page, status: -2 });
-    throw err;
+  // Fallback: the newer of the stale local bundle and the build snapshot; a tie goes to local.
+  const local = readBundle();
+  const snap = await loadSnapshot();
+  const useSnapshot = !!snap && (!local || (Number.isFinite(snap.ts) && snap.ts > local.ts));
+  const chosen = useSnapshot ? snap : local;
+  if (!chosen) throw failure.error;
+
+  const source: FallbackSource = useSnapshot ? 'snapshot' : 'local';
+  const info: FallbackInfo = { reason: failure.reason, savedAt: chosen.ts };
+  setLastFallback(info);
+  trackOnce('data_fallback_served', 'data_fallback_served', { reason: failure.reason, source });
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('notion:fallback', { detail: info }));
   }
+  return chosen;
 }
 
-// ── About ──────────────────────────────────────────────────────────────────
-export async function fetchAbout(): Promise<About> {
-  const cached = getCache<About>('notion_about');
-  if (cached) return cached;
-
-  const { results } = await notionQuery('about');
-  const p = results[0]?.properties ?? {};
-
-  const data: About = {
-    bio: richText(p.Bio?.rich_text),
-    github: safeUrl(p.GitHub?.url),
-    linkedin: safeUrl(p.LinkedIn?.url),
-    x: safeUrl(p.X?.url),
-    medium: safeUrl(p.Medium?.url),
-    email: p.Email?.email ?? undefined,
-    roles: p['Roles']?.multi_select?.map((t: { name: string }) => t.name) ?? [],
-    resumeUrl: safeUrl(p['Resume URL']?.url),
-  };
-
-  setCache('notion_about', data);
-  return data;
+/**
+ * One promise per page load. A resolved set (live, fresh or fallback) stays for
+ * the whole page load, so every section shows the same set and live and saved
+ * data never mix. Only a rejection clears the memo, so a later navigation can
+ * try again once the 60 s window has passed.
+ */
+function loadSiteData(): Promise<SiteData> {
+  if (!siteData) {
+    const p = resolveSiteData();
+    siteData = p;
+    p.catch(() => {
+      if (siteData === p) siteData = null;
+    });
+  }
+  return siteData;
 }
 
-// ── Projects ───────────────────────────────────────────────────────────────
-export async function fetchProjects(): Promise<Project[]> {
-  const cached = getCache<Project[]>('notion_projects');
-  if (cached) return cached;
-
-  const { results } = await notionQuery('projects');
-
-  const data: Project[] = results.map(page => {
-    const p = page.properties;
-    return {
-      id: page.id,
-      title: richText(p.Name?.title),
-      description: richText(p.Description?.rich_text),
-      category: p.Category?.select?.name ?? 'Tools',
-      techStack: p['Tech Stack']?.multi_select?.map((t: { name: string }) => t.name) ?? [],
-      githubUrl: safeUrl(p['GitHub URL']?.url),
-      imageUrl: safeUrl(p['Image URL']?.url),
-      date: p.Date?.date?.start ?? undefined,
-      featured: p.Featured?.checkbox ?? false,
-      sortOrder: p['Sort Order']?.number ?? 0,
-    } satisfies Project;
-  });
-
-  setCache('notion_projects', data);
-  return data;
+export function fetchAbout(): Promise<About> {
+  return loadSiteData().then(d => d.about);
 }
 
-// ── Timeline ───────────────────────────────────────────────────────────────
-export async function fetchTimeline(): Promise<TimelineEvent[]> {
-  const cached = getCache<TimelineEvent[]>('notion_timeline');
-  if (cached) return cached;
-
-  const { results } = await notionQuery('timeline');
-
-  const data: TimelineEvent[] = results.map(page => {
-    const p = page.properties;
-    return {
-      id: page.id,
-      title: richText(p.Name?.title),
-      description: richText(p.Description?.rich_text),
-      date: richText(p['Date Range']?.rich_text),
-      category: p.Category?.select?.name ?? 'Milestone',
-      sortOrder: p['Sort Order']?.number ?? 0,
-    } satisfies TimelineEvent;
-  });
-
-  data.reverse(); // Notion returns ascending Sort Order → reverse = newest first
-  setCache('notion_timeline', data);
-  return data;
+export function fetchProjects(): Promise<Project[]> {
+  return loadSiteData().then(d => d.projects);
 }
 
-// ── Experience ─────────────────────────────────────────────────────────────
-export async function fetchExperience(): Promise<Experience[]> {
-  const cached = getCache<Experience[]>('notion_experience');
-  if (cached) return cached;
+export function fetchTimeline(): Promise<TimelineEvent[]> {
+  return loadSiteData().then(d => d.timeline);
+}
 
-  const { results } = await notionQuery('experience');
-
-  const data: Experience[] = results.map(page => {
-    const p = page.properties;
-    const rawDesc = richText(p.Description?.rich_text);
-    return {
-      id: page.id,
-      company: richText(p.Name?.title),
-      role: richText(p.Role?.rich_text),
-      startDate: p['Start Date']?.date?.start ?? '',
-      endDate: p['End Date']?.date?.start ?? undefined,
-      location: richText(p.Location?.rich_text),
-      description: rawDesc.split('\n').filter(Boolean),
-      techStack: p['Tech Stack']?.multi_select?.map((t: { name: string }) => t.name) ?? [],
-      sortOrder: p['Sort Order']?.number ?? 0,
-    } satisfies Experience;
-  });
-
-  data.sort((a, b) => b.startDate.localeCompare(a.startDate));
-  setCache('notion_experience', data);
-  return data;
+export function fetchExperience(): Promise<Experience[]> {
+  return loadSiteData().then(d => d.experience);
 }

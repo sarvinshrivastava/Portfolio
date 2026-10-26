@@ -73,7 +73,7 @@ test('Projects page loads and fetches Projects from Notion cache', async ({ page
   expect(count).toBeGreaterThan(0);
 
   // Category filter tabs present
-  await expect(page.getByRole('tab', { name: 'All' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'All' })).toBeVisible();
 
   // Network request hit the right DB
   expect(requests.some(u => u.includes(DB_IDS.projects))).toBe(true);
@@ -84,12 +84,12 @@ test('Projects category filter works', async ({ page }) => {
   await expect(page.getByText('$ loading...')).toBeHidden({ timeout: 15_000 });
 
   // Click AI/ML filter
-  await page.getByRole('tab', { name: 'AI/ML' }).click();
-  await expect(page.getByRole('tab', { name: 'AI/ML' })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('button', { name: 'AI/ML' }).click();
+  await expect(page.getByRole('button', { name: 'AI/ML' })).toHaveAttribute('aria-pressed', 'true');
 
   // Toggle back to All
-  await page.getByRole('tab', { name: 'All' }).click();
-  await expect(page.getByRole('tab', { name: 'All' })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('button', { name: 'All' }).click();
+  await expect(page.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true');
 });
 
 // ── My Journey (Timeline) ─────────────────────────────────────────────────────

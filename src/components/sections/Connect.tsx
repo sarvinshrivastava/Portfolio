@@ -113,6 +113,7 @@ export function Connect() {
     track('contact_form_submit');
     setStatus('sending');
     try {
+      // The service and template ids are public constants, not secrets.
       await emailjs.send(
         'service_2hz6tjs',
         'template_gezwadr',

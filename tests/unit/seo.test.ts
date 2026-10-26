@@ -161,7 +161,7 @@ describe('shell mirrors the components it replaces', () => {
     ]);
   });
 
-  it('theme toggle shows Navbar\'s glyph for whichever theme theme.js set', () => {
+  it('theme toggle shows Navbar\'s glyph for whichever theme the inline script set', () => {
     // Navbar renders ○ in dark and ● in light; the shell picks with a CSS variant.
     const [dark, light] = root.querySelectorAll('button[aria-label="Switch theme"] > span');
     expect(dark.textContent).toBe('○');
@@ -190,7 +190,7 @@ describe('home shell', () => {
 
   it('has the sections of Home.tsx, in order, with their fragment ids', () => {
     const ids = [...homeRoot.querySelectorAll('main > section')].map(s => s.id);
-    expect(ids).toEqual(['', 'about', 'credentials', 'connect']);
+    expect(ids).toEqual(['hero', 'about', 'credentials', 'connect']);
     for (const id of ['about', 'credentials', 'connect']) {
       expect(homeRoot.querySelectorAll(`#${id}`)).toHaveLength(1);
     }

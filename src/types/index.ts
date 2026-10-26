@@ -40,7 +40,6 @@ export interface About {
   medium?: string;
   email?: string;
   roles: string[];
-  resumeUrl?: string;
 }
 
 export type Theme = 'dark' | 'light';

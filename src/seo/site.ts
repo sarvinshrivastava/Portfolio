@@ -7,6 +7,7 @@ import {
   PERSON,
   PROFILES,
   RECOMMENDATIONS,
+  RESUME_PATH,
   STATIC_ABOUT,
   aboutSocialLinks,
   monthYear,
@@ -232,6 +233,7 @@ function header(r: SeoRoute): string {
 <a href="/" class="font-mono text-base font-bold text-text tracking-tight hover:opacity-100" aria-label="Sarvin Shrivastava — home"><span class="text-accent">~/</span>sarvin</a>
 <ul class="hidden md:flex list-none gap-8" role="list">${links}</ul>
 <div class="flex items-center gap-4">
+<a href="${RESUME_PATH}" target="_blank" rel="noopener noreferrer" class="hidden md:flex bg-transparent border border-border text-text-muted text-xs font-mono px-3 h-9 rounded items-center gap-1 transition-[color,border-color] hover:text-accent hover:border-accent"><span aria-hidden="true">↓ </span>cv<span class="sr-only"> resume (PDF, opens in new tab)</span></a>
 <button type="button" class="bg-transparent border border-border text-text-muted text-base w-9 h-9 rounded cursor-pointer transition-[color,border-color] flex items-center justify-center hover:text-accent hover:border-accent" aria-label="Switch theme"><span class="[[data-theme=light]_&]:hidden">○</span><span class="hidden [[data-theme=light]_&]:inline">●</span></button>
 <button type="button" class="flex md:hidden flex-col gap-[5px] bg-transparent border-none cursor-pointer p-1" aria-expanded="false" aria-label="Toggle menu"><span class="block w-[22px] h-0.5 bg-text rounded-sm transition-all"></span><span class="block w-[22px] h-0.5 bg-text rounded-sm transition-all"></span><span class="block w-[22px] h-0.5 bg-text rounded-sm transition-all"></span></button>
 </div>
@@ -300,8 +302,8 @@ ${sectionHeading(CONNECT_HEADING, 'h2')}
 }
 
 function hero(): string {
-  // Hero.tsx, before the roles typewriter starts and before Notion returns resumeUrl.
-  return `<section class="min-h-screen flex items-center pt-24 pb-16 max-[480px]:pt-20 max-[480px]:pb-12" aria-label="Introduction">
+  // Hero.tsx, before the roles typewriter starts.
+  return `<section id="hero" class="min-h-screen flex items-center pt-24 pb-16 max-[480px]:pt-20 max-[480px]:pb-12" aria-label="Introduction">
 <div class="container grid grid-cols-2 gap-16 items-center max-[900px]:grid-cols-1 max-[900px]:gap-10">
 <div class="bg-bg-secondary border border-border rounded-lg overflow-hidden font-mono text-sm max-[900px]:-order-1">
 <div class="bg-bg-tertiary border-b border-border px-4 py-[0.6rem] flex items-center gap-[0.4rem]"><span class="w-3 h-3 rounded-full inline-block bg-[#ff5f57]"></span><span class="w-3 h-3 rounded-full inline-block bg-[#febc2e]"></span><span class="w-3 h-3 rounded-full inline-block bg-[#28c840]"></span><span class="ml-3 text-xs text-text-muted">sarvin@portfolio:~</span></div>

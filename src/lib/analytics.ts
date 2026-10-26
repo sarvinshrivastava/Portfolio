@@ -26,7 +26,7 @@ declare global {
   }
 }
 
-export type ResumeSource = 'navbar' | 'hero' | 'mobile_menu' | 'keyboard';
+export type ResumeSource = 'navbar' | 'mobile_menu' | 'keyboard';
 
 export type SocialNetwork = 'github' | 'linkedin' | 'x' | 'medium' | 'email';
 
@@ -64,6 +64,8 @@ export interface EventPayloads {
   // ── Health ───────────────────────────────────────────────────────────────
   data_load_error: { dataset: Dataset; status: number };
   js_error: { message: string; source: string };
+  resume_unavailable: { status: number };
+  data_fallback_served: { reason: 'rate_limited' | 'unavailable'; source: 'local' | 'snapshot' };
 }
 
 export type EventName = keyof EventPayloads;

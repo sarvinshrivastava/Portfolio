@@ -13,8 +13,9 @@ const fadeInUp = {
   }),
 };
 
-function formatDate(dateStr?: string): string {
-  if (!dateStr) return 'Present';
+function formatDate(dateStr: string | undefined, isEnd: boolean): string {
+  // A missing start is unknown, not "Present"; only a missing end means ongoing.
+  if (!dateStr) return isEnd ? 'Present' : '';
   const parts = dateStr.split('-');
   const year = parts[0];
   const monthIdx = parseInt(parts[1] ?? '0') - 1;
@@ -40,13 +41,18 @@ function isCurrentRole(endDate?: string): boolean {
   return new Date() < new Date(endDate);
 }
 
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 function BulletText({ text, techStack }: { text: string; techStack: string[] }) {
   const clean = text.replace(/^[•▸▹-]\s*/, '');
 
   // Priority 1: exact tech stack term (most accurate for tech names like Unity, Mixpanel)
   for (const tech of techStack) {
-    const idx = clean.indexOf(tech);
-    if (idx !== -1) {
+    // No lookbehind (Safari < 16.4): capture the preceding char instead, so
+    // "Go" matches in "using Go" but not inside "Google".
+    const m = new RegExp('(^|[^\\w])(' + escapeRegExp(tech) + ')(?![\\w]|\\+\\+|#)').exec(clean);
+    if (m) {
+      const idx = m.index + m[1].length;
       return (
         <>
           {clean.slice(0, idx)}
@@ -91,14 +97,12 @@ function BulletText({ text, techStack }: { text: string; techStack: string[] }) 
 export function Experience() {
   const [experiences, setExperiences] = useState<ExperienceData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     fetchExperience()
-      .then(data => {
-        data.sort((a, b) => b.startDate.localeCompare(a.startDate));
-        setExperiences(data);
-      })
-      .catch(console.warn)
+      .then(setExperiences)
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, []);
 
@@ -113,6 +117,14 @@ export function Experience() {
         />
 
         {loading && <p className="text-text-muted font-mono text-sm">$ loading...</p>}
+        {error && (
+          <p className="text-text-muted font-mono text-sm">
+            $ couldn't load experience — try again later
+          </p>
+        )}
+        {!loading && !error && experiences.length === 0 && (
+          <p className="text-text-muted font-mono text-sm">$ no experience yet</p>
+        )}
 
         <div className="flex flex-col gap-3">
           {experiences.map((exp, i) => (
@@ -122,7 +134,7 @@ export function Experience() {
               initial="hidden"
               animate="visible"
               variants={fadeInUp}
-              className="bg-bg-secondary border border-white/[0.08] rounded-xl p-7"
+              className="bg-bg-secondary border border-border rounded-xl p-7"
             >
               {/* Header row */}
               <div className="flex justify-between items-start gap-4 mb-6">
@@ -131,7 +143,7 @@ export function Experience() {
                     {exp.company}
                   </h2>
                   <p className="text-xs text-text-muted font-sans mt-[3px]">{exp.role}</p>
-                  {isCurrentRole(exp.endDate) && (
+                  {(exp.startDate || exp.endDate) && isCurrentRole(exp.endDate) && (
                     <div className="flex items-center gap-1 mt-[6px]">
                       <span
                         className="w-[5px] h-[5px] rounded-full bg-[#1D9E75] animate-pulse inline-block"
@@ -142,9 +154,13 @@ export function Experience() {
                   )}
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-xs font-mono text-accent">
-                    {formatDate(exp.startDate)} → {formatDate(exp.endDate)}
-                  </p>
+                  {(exp.startDate || exp.endDate) && (
+                    <p className="text-xs font-mono text-accent">
+                      {exp.startDate
+                        ? `${formatDate(exp.startDate, false)} → ${formatDate(exp.endDate, true)}`
+                        : formatDate(exp.endDate, true)}
+                    </p>
+                  )}
                   <p className="text-xs text-text-muted font-sans mt-[2px]">{exp.location}</p>
                 </div>
               </div>
@@ -169,11 +185,11 @@ export function Experience() {
 
               {/* Tech stack */}
               {exp.techStack.length > 0 && (
-                <div className="flex flex-wrap gap-[5px] pt-3 border-t border-white/[0.08]">
+                <div className="flex flex-wrap gap-[5px] pt-3 border-t border-border">
                   {exp.techStack.map(t => (
                     <span
                       key={t}
-                      className="text-[10px] font-mono px-2 py-0.5 border border-white/[0.12] rounded-sm text-text-muted tracking-[0.02em]"
+                      className="text-[10px] font-mono px-2 py-0.5 border border-border rounded-sm text-text-muted tracking-[0.02em]"
                     >
                       {t}
                     </span>

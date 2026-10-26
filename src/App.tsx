@@ -7,22 +7,19 @@ import { Projects } from './pages/Projects';
 import { MyJourney } from './pages/MyJourney';
 import { Experience } from './pages/Experience';
 import { HelpOverlay } from './components/ui/HelpOverlay';
+import { FallbackToast } from './components/ui/Toast';
 import { useTheme } from './hooks/useTheme';
 import { useKeyboardNav } from './hooks/useKeyboardNav';
 import { useScrollDepth } from './hooks/useScrollDepth';
 import { useDocumentHead } from './hooks/useDocumentHead';
 import { fetchAbout } from './services/notion';
-import { installErrorTracking } from './lib/analytics';
 import { AboutContext } from './context/AboutContext';
 import type { About } from './types';
 
 function AppInner() {
   const { theme, toggle } = useTheme();
   const [about, setAbout] = useState<About | null>(null);
-  const { showHelp, setShowHelp } = useKeyboardNav({
-    onThemeToggle: toggle,
-    resumeUrl: about?.resumeUrl,
-  });
+  const { showHelp, setShowHelp } = useKeyboardNav({ onThemeToggle: toggle });
   useScrollDepth();
   useDocumentHead();
 
@@ -30,14 +27,13 @@ function AppInner() {
     fetchAbout().then(setAbout).catch(console.warn);
   }, []);
 
-  useEffect(installErrorTracking, []);
-
   return (
     <AboutContext.Provider value={about}>
       <a href="#main" className="skip-to-content">
         Skip to content
       </a>
-      <Navbar theme={theme} onThemeToggle={toggle} resumeUrl={about?.resumeUrl} />
+      <Navbar theme={theme} onThemeToggle={toggle} />
+      <FallbackToast />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/projects" element={<Projects />} />

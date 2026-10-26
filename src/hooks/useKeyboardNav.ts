@@ -1,17 +1,32 @@
 import { useEffect, useLayoutEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { track } from '../lib/analytics';
+import { RESUME_PATH } from '../content/profile';
+import { isResumeAvailable } from '../lib/resumeAvailability';
 
 type NavMode = 'idle' | 'section' | 'element';
+
+const KEYNAV_KEYS = new Set([
+  'ArrowLeft',
+  'ArrowRight',
+  'ArrowUp',
+  'ArrowDown',
+  'j',
+  'k',
+  'd',
+  'h',
+  'r',
+  'Escape',
+  '/',
+]);
 
 const PAGES = ['/', '/projects', '/my-journey', '/experience'];
 
 interface UseKeyboardNavOptions {
   onThemeToggle: () => void;
-  resumeUrl?: string;
 }
 
-export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptions) {
+export function useKeyboardNav({ onThemeToggle }: UseKeyboardNavOptions) {
   const [showHelp, setShowHelp] = useState(false);
   const [mode, setMode] = useState<NavMode>('idle');
   const [sectionIndex, setSectionIndex] = useState(0);
@@ -27,7 +42,6 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
     showHelp,
     pathname: location.pathname,
   });
-  const resumeRef = useRef(resumeUrl);
   const toggleRef = useRef(onThemeToggle);
 
   // Sync refs after each render (useLayoutEffect = before paint, safe for event handlers)
@@ -39,9 +53,8 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
       showHelp,
       pathname: location.pathname,
     };
-    resumeRef.current = resumeUrl;
     toggleRef.current = onThemeToggle;
-  }, [mode, sectionIndex, elementIndex, showHelp, location.pathname, resumeUrl, onThemeToggle]);
+  }, [mode, sectionIndex, elementIndex, showHelp, location.pathname, onThemeToggle]);
 
   // Reset on page change
   useEffect(() => {
@@ -67,10 +80,37 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
     const getElements = (section: Element): Element[] =>
       Array.from(section.querySelectorAll('[data-keynav-element]'));
 
+    // Drop native focus (and its ring) when it is not on `except`, so the
+    // keynav highlight is never shown alongside a second ring.
+    const blurActive = (except?: Element | null) => {
+      const a = document.activeElement;
+      if (a instanceof HTMLElement && a !== document.body && a !== except) a.blur();
+    };
+
+    const blurIfInHeader = () => {
+      if (document.activeElement?.closest('header')) blurActive();
+    };
+
+    // Move one page left (-1) or right (+1); at either end, just drop header focus.
+    // Returns true when the key was handled (navigated or hit a known boundary),
+    // false for an unknown route so the caller can leave the key to the browser.
+    const stepPage = (pathname: string, step: -1 | 1): boolean => {
+      const norm = pathname.toLowerCase().replace(/\/+$/, '') || '/';
+      const idx = PAGES.indexOf(norm);
+      if (idx === -1) return false;
+      const target = PAGES[Math.min(PAGES.length - 1, Math.max(0, idx + step))];
+      if (target && target !== norm) {
+        blurActive();
+        navigate(target);
+      }
+      return true;
+    };
+
     const applyFocusSection = (idx: number, sections: Element[]) => {
       removeFocus();
       const el = sections[idx];
       if (!el) return;
+      blurActive(el);
       el.classList.add('keynav-focused');
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     };
@@ -82,6 +122,7 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
       const elements = getElements(section);
       const el = elements[elIdx] as HTMLElement | undefined;
       if (!el) return;
+      blurActive(el);
       el.classList.add('keynav-focused');
       el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       // Only call .focus() on non-interactive elements; inputs will focus themselves
@@ -99,30 +140,29 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
       // Let inputs handle all keys except Escape
       if (isInput && e.key !== 'Escape') return;
 
+      // Keys the keynav owns drop header focus (and its ring) up front
+      if (KEYNAV_KEYS.has(e.key)) blurIfInHeader();
+
       const { mode, sectionIndex, elementIndex, showHelp, pathname } = stateRef.current;
+      // While the help overlay is open, only Escape and h do anything.
+      if (showHelp && e.key !== 'Escape' && e.key !== 'h') return;
       const sections = getSections();
 
       switch (e.key) {
-        case 'ArrowLeft': {
-          e.preventDefault();
-          const idx = PAGES.indexOf(pathname);
-          const prev = PAGES[Math.max(0, idx - 1)];
-          if (prev && prev !== pathname) navigate(prev);
+        case 'ArrowLeft':
+          if (stepPage(pathname, -1)) e.preventDefault();
           break;
-        }
 
-        case 'ArrowRight': {
-          e.preventDefault();
-          const idx = PAGES.indexOf(pathname);
-          const next = PAGES[Math.min(PAGES.length - 1, idx + 1)];
-          if (next && next !== pathname) navigate(next);
+        case 'ArrowRight':
+          if (stepPage(pathname, 1)) e.preventDefault();
           break;
-        }
 
         case 'j':
         case 'ArrowDown': {
           // ArrowDown in idle → let the browser scroll naturally
-          if (e.key === 'ArrowDown' && mode === 'idle') break;
+          if (e.key === 'ArrowDown' && mode === 'idle') {
+            break;
+          }
           e.preventDefault();
 
           if (mode === 'idle') {
@@ -173,7 +213,9 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
         case 'k':
         case 'ArrowUp': {
           // ArrowUp in idle → let the browser scroll naturally
-          if (e.key === 'ArrowUp' && mode === 'idle') break;
+          if (e.key === 'ArrowUp' && mode === 'idle') {
+            break;
+          }
           e.preventDefault();
 
           if (mode === 'section') {
@@ -224,10 +266,18 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
               applyFocusElement(sectionIndex, 0, sections);
             }
           } else if (mode === 'element') {
-            e.preventDefault();
             const section = sections[sectionIndex];
             const elements = section ? getElements(section) : [];
             const el = elements[elementIndex] as HTMLElement | undefined;
+            const active = document.activeElement;
+            if (active && active !== document.body && active !== el) {
+              // The user Tabbed to something else: leave Enter to it (native
+              // activation) and drop the keynav highlight.
+              setMode('idle');
+              removeFocus();
+              break;
+            }
+            e.preventDefault();
             el?.click();
           }
           break;
@@ -236,6 +286,10 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
         case 'Escape': {
           if (showHelp) {
             setShowHelp(false);
+          } else if (isInput && (mode === 'element' || mode === 'section')) {
+            // Keep focus in the field; just leave keynav
+            setMode('idle');
+            removeFocus();
           } else if (mode === 'element') {
             setMode('section');
             applyFocusSection(sectionIndex, sections);
@@ -254,12 +308,14 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
 
         case 'r': {
           // Only 'r' alone — modifiers already blocked above
-          if (resumeRef.current) {
+          // While the PDF is not served the key does nothing, and is not
+          // prevented (the header blur above still applies, as for every key).
+          if (isResumeAvailable()) {
             e.preventDefault();
             track('resume_open', { source: 'keyboard' });
             // 'noopener' is not implicit here — unlike <a target="_blank">,
             // window.open hands the new tab a live window.opener
-            window.open(resumeRef.current, '_blank', 'noopener');
+            window.open(RESUME_PATH, '_blank', 'noopener');
           }
           break;
         }
@@ -271,9 +327,9 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
         }
 
         case '/': {
-          e.preventDefault();
           // Focus the first button inside the filter container
           const filterContainer = document.querySelector('[data-keynav-filter]');
+          if (filterContainer) e.preventDefault();
           const firstBtn = filterContainer?.querySelector('button') as HTMLElement | null;
           (firstBtn ?? (filterContainer as HTMLElement | null))?.focus();
           break;

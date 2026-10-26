@@ -14,7 +14,11 @@ export function useTheme() {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
+    try {
+      localStorage.setItem('theme', theme);
+    } catch {
+      // storage blocked: the theme still applies for this session
+    }
   }, [theme]);
 
   const toggle = () => setTheme(t => (t === 'dark' ? 'light' : 'dark'));

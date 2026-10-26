@@ -7,6 +7,12 @@ import { build } from 'vite';
 import { SEO_ROUTES, canonicalUrl } from '../../src/seo/site';
 import { assertThemeHash } from '../../scripts/csp';
 import { seo } from '../../vite.config';
+import {
+  aboutPages,
+  experiencePages,
+  projectPages,
+  timelinePages,
+} from '../support/notionFixtures';
 
 /**
  * Runs the real production build and checks what the seo plugin wrote. The
@@ -23,7 +29,7 @@ const root = resolve(__dirname, '../..');
 const toml = readFileSync(resolve(root, 'netlify.toml'), 'utf8');
 const outDirs: string[] = [];
 
-async function buildTo(context?: string): Promise<(file: string) => string> {
+async function buildTo(context?: string, mode?: string): Promise<(file: string) => string> {
   if (context) vi.stubEnv('CONTEXT', context);
   const outDir = mkdtempSync(join(tmpdir(), 'seo-build-'));
   outDirs.push(outDir);
@@ -31,6 +37,7 @@ async function buildTo(context?: string): Promise<(file: string) => string> {
     root,
     configFile: resolve(root, 'vite.config.ts'),
     logLevel: 'silent',
+    ...(mode ? { mode } : {}),
     build: { outDir, emptyOutDir: true },
   });
   return file => readFileSync(join(outDir, file), 'utf8');
@@ -88,4 +95,80 @@ describe('seo plugin build output', () => {
       expect(read(route.file)).not.toContain('<script defer src="/umami.js"');
     }
   }, 60_000);
+
+  it('keeps umami and its preconnect out of every route file in a development-mode build', async () => {
+    const read = await buildTo('production', 'development');
+    for (const route of SEO_ROUTES) {
+      const html = read(route.file);
+      expect(html, route.file).not.toContain('<script defer src="/umami.js"');
+      expect(html, route.file).not.toContain('umami.vps.sarvinshrivastava.space');
+    }
+  }, 60_000);
+
+  describe('snapshot plugin', () => {
+    const DB_IDS = { ABOUT: 'ida', PROJECTS: 'idp', TIMELINE: 'idt', EXPERIENCE: 'ide' };
+
+    function stubEnv(flags: { NETLIFY?: string; SNAPSHOT?: string }) {
+      vi.stubEnv('NETLIFY', flags.NETLIFY ?? '');
+      vi.stubEnv('SNAPSHOT', flags.SNAPSHOT ?? '');
+      vi.stubEnv('VITE_NOTION_CACHE_URL', 'https://x.test');
+      for (const [k, v] of Object.entries(DB_IDS)) vi.stubEnv(`VITE_NOTION_DB_${k}`, v);
+    }
+
+    it('emits no data/snapshot.json when neither flag is set', async () => {
+      stubEnv({});
+      const read = await buildTo('production');
+      expect(() => read('data/snapshot.json')).toThrow(/ENOENT/);
+    }, 60_000);
+
+    it('emits data/snapshot.json with v:1 under SNAPSHOT=1', async () => {
+      stubEnv({ SNAPSHOT: '1' });
+      const byId: Record<string, unknown> = {
+        ida: aboutPages(),
+        idp: projectPages,
+        idt: timelinePages,
+        ide: experiencePages,
+      };
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string) => {
+          const id = String(url).split('/').pop() as string;
+          return new Response(JSON.stringify({ results: byId[id] }), { status: 200 });
+        }),
+      );
+      const read = await buildTo('production');
+      const snap = JSON.parse(read('data/snapshot.json'));
+      expect(snap.v).toBe(1);
+      expect(snap.about.bio).toBe('hello');
+      expect(snap.experience).toHaveLength(2);
+    }, 60_000);
+
+    it('emits data/snapshot.json on Netlify (NETLIFY=true) without SNAPSHOT', async () => {
+      stubEnv({ NETLIFY: 'true' });
+      const byId: Record<string, unknown> = {
+        ida: aboutPages(),
+        idp: projectPages,
+        idt: timelinePages,
+        ide: experiencePages,
+      };
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string) => {
+          const id = String(url).split('/').pop() as string;
+          return new Response(JSON.stringify({ results: byId[id] }), { status: 200 });
+        }),
+      );
+      const read = await buildTo('production');
+      expect(JSON.parse(read('data/snapshot.json')).v).toBe(1);
+    }, 60_000);
+
+    it('rejects the build under SNAPSHOT=1 when the cache answers 404', async () => {
+      stubEnv({ SNAPSHOT: '1' });
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => new Response('', { status: 404 })),
+      );
+      await expect(buildTo('production')).rejects.toThrow(/snapshot: \w+ failed \(404\)/);
+    }, 60_000);
+  });
 });
