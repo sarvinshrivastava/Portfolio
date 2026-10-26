@@ -9,11 +9,10 @@ import type { About } from '../../src/types';
 const about: About = {
   bio: 'bio',
   roles: [], // keeps the typewriter timers off
-  resumeUrl: 'https://example.com/cv',
 };
 
 describe('Hero', () => {
-  it('has no resume call to action, even when the About record has a resumeUrl', () => {
+  it('has no resume call to action, even though the navbar links the resume', () => {
     const { container } = render(
       createElement(
         MemoryRouter,
@@ -23,6 +22,6 @@ describe('Hero', () => {
     );
 
     expect(screen.queryByRole('link', { name: /resume/i })).toBeNull();
-    expect(container.querySelector('a[href="https://example.com/cv"]')).toBeNull();
+    expect(container.querySelector('a[href="/resume.pdf"]')).toBeNull();
   });
 });

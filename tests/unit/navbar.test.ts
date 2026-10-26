@@ -8,19 +8,25 @@ import { track } from '../../src/lib/analytics';
 // `track` is a no-op outside PROD, so mock it to observe the calls.
 vi.mock('../../src/lib/analytics', () => ({ track: vi.fn() }));
 
-const RESUME = 'https://example.com/cv';
+// Availability is covered for real in resume-availability.test.ts.
+const availability = vi.hoisted(() => ({ value: true }));
+vi.mock('../../src/lib/resumeAvailability', () => ({
+  useResumeAvailable: () => availability.value,
+  isResumeAvailable: () => availability.value,
+}));
 
 function renderNavbar(path = '/') {
   return render(
     createElement(
       MemoryRouter,
       { initialEntries: [path] },
-      createElement(Navbar, { theme: 'dark', onThemeToggle: () => {}, resumeUrl: RESUME }),
+      createElement(Navbar, { theme: 'dark', onThemeToggle: () => {} }),
     ),
   );
 }
 
 afterEach(() => {
+  availability.value = true;
   Object.defineProperty(window, 'scrollY', { value: 0, configurable: true });
 });
 
@@ -90,7 +96,8 @@ describe('Navbar', () => {
     expect(link.hasAttribute('aria-label')).toBe(false);
     expect(link).toHaveAccessibleName(/resume/);
     expect(link).toHaveAccessibleName(/cv/);
-    expect(link).not.toHaveAccessibleName(/PDF/);
+    expect(link).toHaveAccessibleName(/PDF/);
+    expect(link).toHaveAttribute('href', '/resume.pdf');
     expect(link.querySelector('[aria-hidden="true"]')?.textContent).toContain('↓');
   });
 
@@ -100,9 +107,21 @@ describe('Navbar', () => {
     const dialog = screen.getByRole('dialog', { name: 'Mobile menu' });
     const link = within(dialog).getByRole('link', { name: /resume/ });
 
+    expect(link).toHaveAccessibleName(/PDF/);
     expect(link).toHaveAccessibleName(/opens in new tab/);
+    expect(link).toHaveAttribute('href', '/resume.pdf');
     expect(link).not.toHaveAccessibleName(/↓/);
     expect(link).not.toHaveAccessibleName(/\$/);
+  });
+
+  it('(d3) renders neither resume anchor while the PDF is unavailable', () => {
+    availability.value = false;
+    renderNavbar();
+
+    expect(screen.queryByRole('link', { name: /cv/ })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
+    const dialog = screen.getByRole('dialog', { name: 'Mobile menu' });
+    expect(within(dialog).queryByRole('link', { name: /resume/ })).toBeNull();
   });
 
   it('(b4) treats /projects/ as the current page and returns focus to the hamburger', () => {

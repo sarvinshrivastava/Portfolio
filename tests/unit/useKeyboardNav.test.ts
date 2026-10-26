@@ -4,8 +4,10 @@ import { MemoryRouter, useLocation } from 'react-router-dom';
 import { act, renderHook } from '@testing-library/react';
 import { useKeyboardNav } from '../../src/hooks/useKeyboardNav';
 import { track } from '../../src/lib/analytics';
+import { isResumeAvailable } from '../../src/lib/resumeAvailability';
 
 vi.mock('../../src/lib/analytics', () => ({ track: vi.fn() }));
+vi.mock('../../src/lib/resumeAvailability', () => ({ isResumeAvailable: vi.fn(() => true) }));
 
 // Renders the router location into the DOM so tests read it without module state.
 function Probe() {
@@ -13,10 +15,10 @@ function Probe() {
 }
 const currentPath = () => document.querySelector('[data-probe="path"]')?.textContent;
 
-function mount(initial: string, options: { resumeUrl?: string } = {}) {
+function mount(initial: string) {
   const wrapper = ({ children }: { children: ReactNode }) =>
     createElement(MemoryRouter, { initialEntries: [initial] }, createElement(Probe), children);
-  return renderHook(() => useKeyboardNav({ onThemeToggle: () => {}, ...options }), { wrapper });
+  return renderHook(() => useKeyboardNav({ onThemeToggle: () => {} }), { wrapper });
 }
 
 /** Dispatch a keydown on `target` and return it so callers can read `defaultPrevented`. */
@@ -135,17 +137,18 @@ describe('useKeyboardNav', () => {
     expect(section.classList.contains('keynav-focused')).toBe(true);
   });
 
-  it('(f) r opens the Notion resume URL and tracks it', () => {
+  it('(f) r opens /resume.pdf and tracks it while the PDF is available', () => {
     const open = vi.spyOn(window, 'open').mockReturnValue(null);
-    mount('/', { resumeUrl: 'https://example.com/cv' });
+    mount('/');
 
     press('r');
 
-    expect(open).toHaveBeenCalledWith('https://example.com/cv', '_blank', 'noopener');
+    expect(open).toHaveBeenCalledWith('/resume.pdf', '_blank', 'noopener');
     expect(track).toHaveBeenCalledWith('resume_open', { source: 'keyboard' });
   });
 
-  it('(f2) r without a resumeUrl does nothing and is not prevented', () => {
+  it('(f2) r while the PDF is unavailable does nothing and is not prevented', () => {
+    vi.mocked(isResumeAvailable).mockReturnValue(false);
     const open = vi.spyOn(window, 'open').mockReturnValue(null);
     mount('/');
 
@@ -211,7 +214,7 @@ describe('useKeyboardNav', () => {
 
   it.each(['d', 'h', 'r'])('(k) %s drops focus from a header link', key => {
     const link = el('a', el('header'), { href: '#x' });
-    mount('/', { resumeUrl: 'https://example.com/cv' });
+    mount('/');
     vi.spyOn(window, 'open').mockReturnValue(null);
     link.focus();
 

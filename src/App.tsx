@@ -19,10 +19,7 @@ import type { About } from './types';
 function AppInner() {
   const { theme, toggle } = useTheme();
   const [about, setAbout] = useState<About | null>(null);
-  const { showHelp, setShowHelp } = useKeyboardNav({
-    onThemeToggle: toggle,
-    resumeUrl: about?.resumeUrl,
-  });
+  const { showHelp, setShowHelp } = useKeyboardNav({ onThemeToggle: toggle });
   useScrollDepth();
   useDocumentHead();
 
@@ -35,7 +32,7 @@ function AppInner() {
       <a href="#main" className="skip-to-content">
         Skip to content
       </a>
-      <Navbar theme={theme} onThemeToggle={toggle} resumeUrl={about?.resumeUrl} />
+      <Navbar theme={theme} onThemeToggle={toggle} />
       <FallbackToast />
       <Routes>
         <Route path="/" element={<Home />} />

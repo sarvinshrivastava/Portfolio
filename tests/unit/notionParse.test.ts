@@ -23,7 +23,6 @@ describe('notionParse', () => {
       medium: undefined,
       email: 'a@b.co',
       roles: ['Dev'],
-      resumeUrl: undefined,
     });
   });
 

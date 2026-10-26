@@ -18,6 +18,13 @@ import {
  * h1 on the subpages, whose copy is duplicated in SEO_ROUTES.
  */
 
+// The Navbar probes /resume.pdf on mount; availability is mocked to true so the
+// React header matches the shell's cv anchor with no real fetch in jsdom.
+vi.mock('../../src/lib/resumeAvailability', () => ({
+  useResumeAvailable: () => true,
+  isResumeAvailable: () => true,
+}));
+
 // Pages fetch from Notion on mount; a pending promise keeps them in their
 // first-paint (loading) state, which is exactly what the shell copies.
 vi.mock('../../src/services/notion', () => {
@@ -146,7 +153,7 @@ describe('shell parity', () => {
     expect(block(pageH1s[0])).toEqual(block(shellH1));
   });
   it.each(['/', '/projects', '/my-journey', '/experience'])(
-    'header nav at %s matches the shell (first paint: no About yet, so no cv link)',
+    'header nav at %s matches the shell (first paint, cv link included)',
     path => {
       Object.defineProperty(window, 'scrollY', { value: 0, configurable: true });
       const { container } = render(

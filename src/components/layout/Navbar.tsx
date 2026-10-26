@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { track } from '../../lib/analytics';
+import { RESUME_PATH } from '../../content/profile';
+import { useResumeAvailable } from '../../lib/resumeAvailability';
 import type { Theme } from '../../types';
 
 interface NavbarProps {
   theme: Theme;
   onThemeToggle: () => void;
-  resumeUrl?: string;
 }
 
 const NAV_LINKS = [
@@ -16,7 +17,8 @@ const NAV_LINKS = [
   { to: '/experience', label: 'Experience' },
 ];
 
-export function Navbar({ theme, onThemeToggle, resumeUrl }: NavbarProps) {
+export function Navbar({ theme, onThemeToggle }: NavbarProps) {
+  const resumeOk = useResumeAvailable();
   // Storing the pathname at which the menu was opened means location change
   // automatically closes it without any setState-in-effect.
   const [menuOpenAt, setMenuOpenAt] = useState<string | null>(null);
@@ -79,16 +81,16 @@ export function Navbar({ theme, onThemeToggle, resumeUrl }: NavbarProps) {
         </ul>
 
         <div className="flex items-center gap-4">
-          {resumeUrl && (
+          {resumeOk && (
             <a
-              href={resumeUrl}
+              href={RESUME_PATH}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => track('resume_open', { source: 'navbar' })}
               className="hidden md:flex bg-transparent border border-border text-text-muted text-xs font-mono px-3 h-9 rounded items-center gap-1 transition-[color,border-color] hover:text-accent hover:border-accent"
             >
               <span aria-hidden="true">↓ </span>cv
-              <span className="sr-only"> resume (opens in new tab)</span>
+              <span className="sr-only"> resume (PDF, opens in new tab)</span>
             </a>
           )}
           <button
@@ -141,10 +143,10 @@ export function Navbar({ theme, onThemeToggle, resumeUrl }: NavbarProps) {
                 </NavLink>
               </li>
             ))}
-            {resumeUrl && (
+            {resumeOk && (
               <li>
                 <a
-                  href={resumeUrl}
+                  href={RESUME_PATH}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => {
@@ -155,7 +157,7 @@ export function Navbar({ theme, onThemeToggle, resumeUrl }: NavbarProps) {
                 >
                   <span className="text-accent" aria-hidden="true">$ </span>
                   <span aria-hidden="true">↓ </span>resume
-                  <span className="sr-only"> (opens in new tab)</span>
+                  <span className="sr-only"> (PDF, opens in new tab)</span>
                 </a>
               </li>
             )}

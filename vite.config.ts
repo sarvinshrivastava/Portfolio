@@ -184,6 +184,12 @@ export default defineConfig({
     proxy: {
       '/api/database': 'https://notion-cache.vps.sarvinshrivastava.space',
       '/api/pages': 'https://notion-cache.vps.sarvinshrivastava.space',
+      '/resume.pdf': { target: 'https://notion-cache.vps.sarvinshrivastava.space', changeOrigin: true },
+    },
+  },
+  preview: {
+    proxy: {
+      '/resume.pdf': { target: 'https://notion-cache.vps.sarvinshrivastava.space', changeOrigin: true },
     },
   },
 });

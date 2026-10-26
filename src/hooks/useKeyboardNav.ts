@@ -1,6 +1,8 @@
 import { useEffect, useLayoutEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { track } from '../lib/analytics';
+import { RESUME_PATH } from '../content/profile';
+import { isResumeAvailable } from '../lib/resumeAvailability';
 
 type NavMode = 'idle' | 'section' | 'element';
 
@@ -22,10 +24,9 @@ const PAGES = ['/', '/projects', '/my-journey', '/experience'];
 
 interface UseKeyboardNavOptions {
   onThemeToggle: () => void;
-  resumeUrl?: string;
 }
 
-export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptions) {
+export function useKeyboardNav({ onThemeToggle }: UseKeyboardNavOptions) {
   const [showHelp, setShowHelp] = useState(false);
   const [mode, setMode] = useState<NavMode>('idle');
   const [sectionIndex, setSectionIndex] = useState(0);
@@ -41,7 +42,6 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
     showHelp,
     pathname: location.pathname,
   });
-  const resumeRef = useRef(resumeUrl);
   const toggleRef = useRef(onThemeToggle);
 
   // Sync refs after each render (useLayoutEffect = before paint, safe for event handlers)
@@ -53,9 +53,8 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
       showHelp,
       pathname: location.pathname,
     };
-    resumeRef.current = resumeUrl;
     toggleRef.current = onThemeToggle;
-  }, [mode, sectionIndex, elementIndex, showHelp, location.pathname, resumeUrl, onThemeToggle]);
+  }, [mode, sectionIndex, elementIndex, showHelp, location.pathname, onThemeToggle]);
 
   // Reset on page change
   useEffect(() => {
@@ -309,12 +308,14 @@ export function useKeyboardNav({ onThemeToggle, resumeUrl }: UseKeyboardNavOptio
 
         case 'r': {
           // Only 'r' alone — modifiers already blocked above
-          if (resumeRef.current) {
+          // While the PDF is not served the key does nothing, and is not
+          // prevented (the header blur above still applies, as for every key).
+          if (isResumeAvailable()) {
             e.preventDefault();
             track('resume_open', { source: 'keyboard' });
             // 'noopener' is not implicit here — unlike <a target="_blank">,
             // window.open hands the new tab a live window.opener
-            window.open(resumeRef.current, '_blank', 'noopener');
+            window.open(RESUME_PATH, '_blank', 'noopener');
           }
           break;
         }

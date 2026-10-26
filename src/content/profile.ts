@@ -12,6 +12,9 @@
 import type { SocialNetwork } from '../lib/analytics';
 import type { About } from '../types';
 
+/** Same-origin path: Netlify proxies it to notion-cache, which serves the daily-rendered PDF. */
+export const RESUME_PATH = '/resume.pdf';
+
 export const PERSON = {
   name: 'Sarvin Shrivastava',
   url: 'https://sarvinshrivastava.space',

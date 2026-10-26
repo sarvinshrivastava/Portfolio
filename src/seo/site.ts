@@ -7,6 +7,7 @@ import {
   PERSON,
   PROFILES,
   RECOMMENDATIONS,
+  RESUME_PATH,
   STATIC_ABOUT,
   aboutSocialLinks,
   monthYear,
@@ -232,6 +233,7 @@ function header(r: SeoRoute): string {
 <a href="/" class="font-mono text-base font-bold text-text tracking-tight hover:opacity-100" aria-label="Sarvin Shrivastava — home"><span class="text-accent">~/</span>sarvin</a>
 <ul class="hidden md:flex list-none gap-8" role="list">${links}</ul>
 <div class="flex items-center gap-4">
+<a href="${RESUME_PATH}" target="_blank" rel="noopener noreferrer" class="hidden md:flex bg-transparent border border-border text-text-muted text-xs font-mono px-3 h-9 rounded items-center gap-1 transition-[color,border-color] hover:text-accent hover:border-accent"><span aria-hidden="true">↓ </span>cv<span class="sr-only"> resume (PDF, opens in new tab)</span></a>
 <button type="button" class="bg-transparent border border-border text-text-muted text-base w-9 h-9 rounded cursor-pointer transition-[color,border-color] flex items-center justify-center hover:text-accent hover:border-accent" aria-label="Switch theme"><span class="[[data-theme=light]_&]:hidden">○</span><span class="hidden [[data-theme=light]_&]:inline">●</span></button>
 <button type="button" class="flex md:hidden flex-col gap-[5px] bg-transparent border-none cursor-pointer p-1" aria-expanded="false" aria-label="Toggle menu"><span class="block w-[22px] h-0.5 bg-text rounded-sm transition-all"></span><span class="block w-[22px] h-0.5 bg-text rounded-sm transition-all"></span><span class="block w-[22px] h-0.5 bg-text rounded-sm transition-all"></span></button>
 </div>

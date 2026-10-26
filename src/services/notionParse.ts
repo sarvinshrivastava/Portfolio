@@ -41,7 +41,6 @@ export function parseAbout(results: NotionPage[]): About {
     medium: safeUrl(p.Medium?.url),
     email: p.Email?.email ?? undefined,
     roles: p['Roles']?.multi_select?.map((t: { name: string }) => t.name) ?? [],
-    resumeUrl: safeUrl(p['Resume URL']?.url),
   };
 }
 
