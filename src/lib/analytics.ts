@@ -64,6 +64,7 @@ export interface EventPayloads {
   // ── Health ───────────────────────────────────────────────────────────────
   data_load_error: { dataset: Dataset; status: number };
   js_error: { message: string; source: string };
+  data_fallback_served: { reason: 'rate_limited' | 'unavailable'; source: 'local' | 'snapshot' };
 }
 
 export type EventName = keyof EventPayloads;

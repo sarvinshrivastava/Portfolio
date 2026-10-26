@@ -7,6 +7,7 @@ import { Projects } from './pages/Projects';
 import { MyJourney } from './pages/MyJourney';
 import { Experience } from './pages/Experience';
 import { HelpOverlay } from './components/ui/HelpOverlay';
+import { FallbackToast } from './components/ui/Toast';
 import { useTheme } from './hooks/useTheme';
 import { useKeyboardNav } from './hooks/useKeyboardNav';
 import { useScrollDepth } from './hooks/useScrollDepth';
@@ -35,6 +36,7 @@ function AppInner() {
         Skip to content
       </a>
       <Navbar theme={theme} onThemeToggle={toggle} resumeUrl={about?.resumeUrl} />
+      <FallbackToast />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/projects" element={<Projects />} />
