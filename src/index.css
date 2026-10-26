@@ -3,13 +3,17 @@
 @import "tailwindcss";
 
 /* ── Design tokens ───────────────────────────────── */
+:root {
+  --radius: 4px;
+}
+
 [data-theme='dark'] {
   --bg: #0d0d0d;
   --bg-secondary: #141414;
   --bg-tertiary: #1a1a1a;
   --border: rgba(255, 255, 255, 0.08);
   --text: #e8e8e8;
-  --text-muted: #6b6b6b;
+  --text-muted: #8a8a8a;
   --text-subtle: #3a3a3a;
   --accent: #F5A623;
   --accent-dim: rgba(245, 166, 35, 0.15);
@@ -25,7 +29,7 @@
   --bg-tertiary: #e8e8e8;
   --border: rgba(0, 0, 0, 0.08);
   --text: #111111;
-  --text-muted: #888888;
+  --text-muted: #636363;
   --text-subtle: #cccccc;
   --accent: #F5A623;
   --accent-dim: rgba(245, 166, 35, 0.15);
@@ -33,6 +37,21 @@
 
   /* Focus ring: own group, kept apart from the tokens above */
   --focus-ring: #A86A0C;
+}
+
+/* ── Container ───────────────────────────────────── */
+/* @utility, not a component class: Tailwind's built-in `container` utility sits
+   in the utilities layer and beat a plain `.container`. Declared this way, these
+   declarations are merged into it and come after its breakpoint max-widths, so
+   1200px wins at every width. See learnings/tailwind-v4-container-utility-overrides-custom-class.md */
+@utility container {
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: 2rem;
+
+  @media (width < 48rem) {
+    padding-inline: 1rem;
+  }
 }
 
 /* ── Tailwind theme tokens ───────────────────────── */
@@ -104,16 +123,6 @@
 
 /* ── Components ──────────────────────────────────── */
 @layer components {
-  .container {
-    max-width: 1200px;
-    margin-inline: auto;
-    padding-inline: 2rem;
-
-    @media (max-width: 768px) {
-      padding-inline: 1rem;
-    }
-  }
-
   .skip-to-content {
     position: absolute;
     top: -100%;

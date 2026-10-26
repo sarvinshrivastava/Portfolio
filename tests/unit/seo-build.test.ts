@@ -6,6 +6,7 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 import { build } from 'vite';
 import { SEO_ROUTES, canonicalUrl } from '../../src/seo/site';
 import { assertThemeHash } from '../../scripts/csp';
+import { lastContainerMaxWidth } from '../support/css';
 import { seo } from '../../vite.config';
 import {
   aboutPages,
@@ -70,6 +71,12 @@ describe('seo plugin build output', () => {
       expect(() => assertThemeHash(html, toml)).not.toThrow();
     }
     expect(() => read('theme.js')).toThrow(/ENOENT/);
+    // Tailwind's built-in container utility emits 40rem..96rem max-widths; the
+    // last one for .container must be ours, or wide screens get 1536px content
+    // (learnings/tailwind-v4-container-utility-overrides-custom-class.md).
+    const cssHref = /<link rel="stylesheet"[^>]*href="\/(assets\/[^"]+\.css)"/.exec(read('index.html'));
+    expect(cssHref, 'stylesheet link in index.html').not.toBeNull();
+    expect(lastContainerMaxWidth(read(cssHref![1]))).toBe('1200px');
   }, 60_000);
 
   it('fails the build when netlify.toml carries a stale theme hash', async () => {

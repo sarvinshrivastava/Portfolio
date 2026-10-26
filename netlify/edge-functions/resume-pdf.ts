@@ -60,22 +60,12 @@ export function createHandler({
         return failure(405, 'method not allowed', { Allow: 'GET, HEAD' });
       }
 
-      // For `cache: 'manual'` the query string is part of the cache key, so
-      // `/resume.pdf?<random>` would force a full upstream fetch per request.
-      // Send those visitors to the canonical, cacheable URL instead.
-      if (new URL(req.url).search !== '') {
-        return new Response(null, {
-          status: 301,
-          headers: { Location: '/resume.pdf', 'X-Content-Type-Options': 'nosniff' },
-        });
-      }
-
       // One deadline covers the headers and the body.
       const ctrl = new AbortController();
       const { signal } = ctrl;
       const timer = setTimeout(() => ctrl.abort(), deadlineMs);
       try {
-        // No visitor header is forwarded, and the URL has no query string by now. The
+        // No visitor header is forwarded, and the request's query is never forwarded. The
         // upstream is fetched with GET for HEAD too, so both apply the same checks.
         const upstream = await fetchImpl(UPSTREAM, { method: 'GET', redirect: 'manual', signal });
 
@@ -130,6 +120,11 @@ export function createHandler({
         const etag = upstream.headers.get('etag');
         const headers: Record<string, string> = { ...GATE_HEADERS };
         if (etag && ETAG.test(etag)) headers.ETag = etag;
+
+        // Query variants are separate cache keys: serving them unstored keeps `?<random>`
+        // from filling the edge cache. A redirect can't strip the query, because Netlify
+        // re-appends it to `Location` (learnings/netlify-edge-redirect-keeps-query-string.md).
+        if (new URL(req.url).search !== '') headers['Netlify-CDN-Cache-Control'] = 'no-store';
 
         if (req.method === 'HEAD') {
           // A bodiless response must never be stored under a key a GET could hit.
