@@ -101,10 +101,7 @@ export function Experience() {
 
   useEffect(() => {
     fetchExperience()
-      .then(data => {
-        data.sort((a, b) => b.startDate.localeCompare(a.startDate));
-        setExperiences(data);
-      })
+      .then(setExperiences)
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, []);

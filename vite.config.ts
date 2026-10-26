@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { HOME_ROUTE, SEO_ROUTES, renderRouteHtml, seoRouteFor } from './src/seo/site';
 import { assertThemeHash } from './scripts/csp';
+import { fetchSnapshot } from './scripts/snapshot';
 
 /** Next to this file, not process.cwd(), so builds started elsewhere check the right one. */
 const NETLIFY_TOML = fileURLToPath(new URL('./netlify.toml', import.meta.url));
@@ -135,9 +136,50 @@ export function seo({ netlifyToml = NETLIFY_TOML }: { netlifyToml?: string } = {
   };
 }
 
+/**
+ * Emits dist/data/snapshot.json: the four Notion datasets as of this build, the
+ * site's fallback when the live notion-cache is down or rate-limited. A build
+ * that cannot fetch it fails, so a deploy never ships without a fallback.
+ *
+ * Runs on Netlify (`NETLIFY=true`) or when `SNAPSHOT=1`; a plain local build
+ * skips it, so `bun run build` and the tests need no network. `VITE_*` values
+ * come from `configResolved`, which already merged the env files and
+ * Netlify's environment.
+ */
+function snapshot(): Plugin {
+  let viteEnv: Record<string, string> = {};
+  return {
+    name: 'notion-snapshot',
+    apply: 'build',
+    configResolved(config) {
+      viteEnv = config.env;
+    },
+    async generateBundle() {
+      if (process.env.NETLIFY !== 'true' && process.env.SNAPSHOT !== '1') {
+        this.warn('snapshot skipped (set SNAPSHOT=1 to enable)');
+        return;
+      }
+      try {
+        const s = await fetchSnapshot({
+          base: viteEnv.VITE_NOTION_CACHE_URL ?? '',
+          ids: {
+            about: viteEnv.VITE_NOTION_DB_ABOUT ?? '',
+            projects: viteEnv.VITE_NOTION_DB_PROJECTS ?? '',
+            timeline: viteEnv.VITE_NOTION_DB_TIMELINE ?? '',
+            experience: viteEnv.VITE_NOTION_DB_EXPERIENCE ?? '',
+          },
+        });
+        this.emitFile({ type: 'asset', fileName: 'data/snapshot.json', source: JSON.stringify(s) });
+      } catch (err) {
+        this.error((err as Error).message);
+      }
+    },
+  };
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss(), umami(), seo()],
+  plugins: [react(), tailwindcss(), umami(), seo(), snapshot()],
   server: {
     proxy: {
       '/api/database': 'https://notion-cache.vps.sarvinshrivastava.space',

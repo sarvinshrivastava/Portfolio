@@ -54,10 +54,7 @@ export function MyJourney() {
 
   useEffect(() => {
     fetchTimeline()
-      .then(data => {
-        data.sort((a, b) => a.sortOrder - b.sortOrder);
-        setEvents(data);
-      })
+      .then(setEvents)
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, []);
