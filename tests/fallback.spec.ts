@@ -67,3 +67,28 @@ test('hides the cv link when /resume.pdf answers 503', async ({ page }) => {
 
   await expect(page.getByRole('link', { name: /cv/ })).toHaveCount(0);
 });
+
+test('keeps the cv link and shows the error state when no data can be served', async ({ page }) => {
+  // Every dataset fails, there is no snapshot and no saved bundle (fresh context).
+  await page.route('**/api/database/**', route =>
+    route.fulfill({
+      status: 500,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: 'boom' }),
+    }),
+  );
+  await page.route('**/data/snapshot.json', route => route.fulfill({ status: 404, body: '' }));
+  await page.route('**/resume.pdf', route =>
+    route.fulfill({ status: 200, contentType: 'application/pdf', body: '%PDF-1.4' }),
+  );
+  await page.goto('/projects');
+
+  await expect(page.getByText("$ couldn't load projects")).toBeVisible();
+  // Nothing saved was served, so there is no toast.
+  await expect(page.getByRole('status')).toHaveText('');
+  await expect(page.getByRole('button', { name: 'Dismiss' })).toHaveCount(0);
+
+  const cv = page.getByRole('link', { name: /cv/ });
+  await expect(cv).toBeVisible();
+  await expect(cv).toHaveAttribute('href', '/resume.pdf');
+});
