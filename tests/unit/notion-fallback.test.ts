@@ -33,7 +33,10 @@ const events = () => analytics.trackOnce.mock.calls.map(c => [c[1], c[2]]);
 const fallbackEvents = () => events().filter(e => e[0] === 'data_fallback_served');
 const seed = (ts: number, tag = 'stale', cv = 1) =>
   storage.setItem('notion_bundle', bundleJson(ts, tag, cv));
-const status = (n: number): Handler => () => json('', n);
+const status =
+  (n: number): Handler =>
+  () =>
+    json('', n);
 
 beforeEach(() => {
   analytics.track.mockClear();
@@ -247,6 +250,11 @@ describe('group commit with saved-data fallback', () => {
   it.each([
     ['about: null', { about: null }],
     ['projects: "x"', { projects: 'x' }],
+    ['timeline: {}', { timeline: {} }],
+    ['experience: "x"', { experience: 'x' }],
+    ['projects: [null]', { projects: [null] }],
+    ['timeline: [null]', { timeline: [null] }],
+    ['experience: [[]]', { experience: [[]] }],
   ])('ignores a saved bundle with %s', async (_label, patch) => {
     storage.setItem(
       'notion_bundle',
@@ -266,6 +274,17 @@ describe('group commit with saved-data fallback', () => {
     const { fetchAbout } = await loadNotion();
 
     await expect(fetchAbout()).rejects.toThrow();
+  });
+
+  it('drops javascript: urls from the snapshot too', async () => {
+    const snap = snapshotBody(new Date().toISOString());
+    snap.about.github = 'javascript:alert(1)';
+    snap.projects[0].githubUrl = 'javascript:alert(2)';
+    route({ about: status(500), snapshot: () => json(snap) });
+    const { fetchAbout, fetchProjects } = await loadNotion();
+
+    expect((await fetchAbout()).github).toBeUndefined();
+    expect((await fetchProjects())[0].githubUrl).toBeUndefined();
   });
 
   it('drops a javascript: url from saved data', async () => {

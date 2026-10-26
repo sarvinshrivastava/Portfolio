@@ -15,7 +15,10 @@ interface StreamOpts {
 }
 
 /** A body stream: emits `chunks`, then closes (or never does, with `hang`). */
-function stream(chunks: Uint8Array[], { cancel, hang, signal, onAbort = 'error' }: StreamOpts = {}) {
+function stream(
+  chunks: Uint8Array[],
+  { cancel, hang, signal, onAbort = 'error' }: StreamOpts = {},
+) {
   let i = 0;
   return new ReadableStream<Uint8Array>({
     start(c) {
@@ -72,12 +75,59 @@ afterEach(() => {
 });
 
 describe('resume-pdf edge gate', () => {
+  it('pins the exact upstream host', () => {
+    expect(UPSTREAM).toBe('https://notion-cache.vps.sarvinshrivastava.space/resume.pdf');
+  });
+
+  it.each(['GET', 'HEAD'])(
+    'redirects a %s with a query string to /resume.pdf, no upstream call',
+    async method => {
+      const fetchImpl = asFetch(async () => upstreamRes(PDF));
+      const res = await createHandler({ fetchImpl })(
+        get('https://x.test/resume.pdf?x=1', { method }),
+      );
+
+      expect(res.status).toBe(301);
+      expect(res.headers.get('location')).toBe('/resume.pdf');
+      expect(res.headers.get('x-content-type-options')).toBe('nosniff');
+      expect(fetchImpl).not.toHaveBeenCalled();
+    },
+  );
+
+  it('answers 405 before the query redirect for other methods', async () => {
+    const res = await createHandler({ fetchImpl: asFetch(async () => upstreamRes(PDF)) })(
+      get('https://x.test/resume.pdf?x=1', { method: 'POST' }),
+    );
+    expect(res.status).toBe(405);
+  });
+
+  it('answers 503 when content-length disagrees with the bytes read, 200 when it matches', async () => {
+    const body = (n: number) => {
+      const b = new Uint8Array(n).fill(0x41);
+      b.set(enc.encode('%PDF-'));
+      return b;
+    };
+    const short = await createHandler({
+      fetchImpl: asFetch(async () =>
+        upstreamRes(body(50), { headers: { 'content-length': '100' } }),
+      ),
+    })(get());
+    await expect503(short);
+
+    const exact = await createHandler({
+      fetchImpl: asFetch(async () =>
+        upstreamRes(body(100), { headers: { 'content-length': '100' } }),
+      ),
+    })(get());
+    expect(exact.status).toBe(200);
+  });
+
   it('serves a PDF with exactly the gate headers and forwards nothing from the visitor', async () => {
     const fetchImpl = asFetch(async () =>
       upstreamRes(PDF, { headers: { 'content-type': 'Application/PDF; charset=binary' } }),
     );
     const res = await createHandler({ fetchImpl })(
-      get('https://x.test/resume.pdf?x=../api/cache', {
+      get('https://x.test/resume.pdf', {
         headers: { cookie: 'a=b', authorization: 'Bearer t', 'if-none-match': ETAG },
       }),
     );
@@ -151,14 +201,18 @@ describe('resume-pdf edge gate', () => {
   it('cancels the upstream body on every 503 path that has one', async () => {
     for (const make of [
       (cancel: () => void) =>
-        new Response(stream([PDF], { cancel }), { status: 404, headers: { 'content-type': 'application/pdf' } }),
+        new Response(stream([PDF], { cancel }), {
+          status: 404,
+          headers: { 'content-type': 'application/pdf' },
+        }),
       (cancel: () => void) =>
-        new Response(stream([PDF], { cancel }), { status: 200, headers: { 'content-type': 'text/html' } }),
+        new Response(stream([PDF], { cancel }), {
+          status: 200,
+          headers: { 'content-type': 'text/html' },
+        }),
     ]) {
       const cancel = vi.fn();
-      await expect503(
-        await createHandler({ fetchImpl: asFetch(async () => make(cancel)) })(get()),
-      );
+      await expect503(await createHandler({ fetchImpl: asFetch(async () => make(cancel)) })(get()));
       expect(cancel).toHaveBeenCalledTimes(1);
     }
   });
@@ -179,7 +233,10 @@ describe('resume-pdf edge gate', () => {
     const cancel = vi.fn();
     const big = await createHandler({
       fetchImpl: asFetch(
-        async () => new Response(stream([body(101)], { cancel, hang: true }), { headers: { 'content-type': 'application/pdf' } }),
+        async () =>
+          new Response(stream([body(101)], { cancel, hang: true }), {
+            headers: { 'content-type': 'application/pdf' },
+          }),
       ),
       maxBytes: 100,
     })(get());
@@ -243,7 +300,9 @@ describe('resume-pdf edge gate', () => {
     await ok.arrayBuffer();
     expect(vi.getTimerCount()).toBe(0);
 
-    await createHandler({ fetchImpl: asFetch(async () => upstreamRes('x', { status: 503 })) })(get());
+    await createHandler({ fetchImpl: asFetch(async () => upstreamRes('x', { status: 503 })) })(
+      get(),
+    );
     expect(vi.getTimerCount()).toBe(0);
   });
 
@@ -254,16 +313,19 @@ describe('resume-pdf edge gate', () => {
     await expect503(await createHandler({ fetchImpl })(get()));
   });
 
-  it.each(['POST', 'PUT', 'OPTIONS'])('answers 405 to %s without calling upstream', async method => {
-    const fetchImpl = asFetch(async () => upstreamRes(PDF));
-    const res = await createHandler({ fetchImpl })(get(undefined, { method }));
+  it.each(['POST', 'PUT', 'OPTIONS'])(
+    'answers 405 to %s without calling upstream',
+    async method => {
+      const fetchImpl = asFetch(async () => upstreamRes(PDF));
+      const res = await createHandler({ fetchImpl })(get(undefined, { method }));
 
-    expect(res.status).toBe(405);
-    expect(res.headers.get('allow')).toBe('GET, HEAD');
-    expect(res.headers.get('netlify-cdn-cache-control')).toBe('no-store');
-    expect(await res.text()).toBe('method not allowed');
-    expect(fetchImpl).not.toHaveBeenCalled();
-  });
+      expect(res.status).toBe(405);
+      expect(res.headers.get('allow')).toBe('GET, HEAD');
+      expect(res.headers.get('netlify-cdn-cache-control')).toBe('no-store');
+      expect(await res.text()).toBe('method not allowed');
+      expect(fetchImpl).not.toHaveBeenCalled();
+    },
+  );
 
   it('answers HEAD with a bodiless 200 that is never stored, fetching upstream with GET', async () => {
     const fetchImpl = asFetch(async () => upstreamRes(PDF));
@@ -277,8 +339,8 @@ describe('resume-pdf edge gate', () => {
   });
 
   it('answers HEAD with a 503 when upstream is text/html', async () => {
-    const fetchImpl = asFetch(
-      async () => upstreamRes('<html>', { headers: { 'content-type': 'text/html' } }),
+    const fetchImpl = asFetch(async () =>
+      upstreamRes('<html>', { headers: { 'content-type': 'text/html' } }),
     );
     const res = await createHandler({ fetchImpl })(get(undefined, { method: 'HEAD' }));
 

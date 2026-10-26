@@ -19,10 +19,10 @@ export function richText(blocks: { plain_text: string }[] | undefined): string {
 }
 
 /**
- * Notion hands us URLs an editor typed, and one of them reaches `window.open`
- * in useKeyboardNav — which, unlike React's `href` handling, does NOT block
- * `javascript:`. Anything that is not plain http(s) is dropped at the source so
- * every consumer inherits the check.
+ * Notion hands us URLs an editor typed, and they end up in `href` and `src`
+ * attributes, where a `javascript:` URL is dangerous. Anything that is not
+ * plain http(s) is dropped at the source so every consumer inherits the check.
+ * (The only `window.open` call opens the constant RESUME_PATH, not a Notion URL.)
  */
 export function safeUrl(value: unknown): string | undefined {
   if (typeof value !== 'string' || !value) return undefined;
@@ -54,7 +54,8 @@ export function sanitizeSaved(raw: unknown): {
   if (!Array.isArray(projects) || !Array.isArray(timeline) || !Array.isArray(experience)) {
     return null;
   }
-  if (projects.some(p => !p || typeof p !== 'object')) return null;
+  const isRecord = (v: unknown) => !!v && typeof v === 'object' && !Array.isArray(v);
+  if (![...projects, ...timeline, ...experience].every(isRecord)) return null;
   const a = about as About;
   return {
     about: {

@@ -186,12 +186,12 @@ export default defineConfig({
     proxy: {
       '/api/database': NOTION_CACHE,
       '/api/pages': NOTION_CACHE,
-      '^/resume\\.pdf$': { target: NOTION_CACHE, changeOrigin: true },
+      '^/resume\\.pdf(\\?.*)?$': { target: NOTION_CACHE, changeOrigin: true },
     },
   },
   preview: {
     proxy: {
-      '^/resume\\.pdf$': { target: NOTION_CACHE, changeOrigin: true },
+      '^/resume\\.pdf(\\?.*)?$': { target: NOTION_CACHE, changeOrigin: true },
     },
   },
 });

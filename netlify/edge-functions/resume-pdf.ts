@@ -13,6 +13,7 @@
  * side effects, so the handler is unit-testable under node.
  */
 
+// A literal on purpose: an edge function cannot read the build's VITE_* vars, and the host is public.
 export const UPSTREAM = 'https://notion-cache.vps.sarvinshrivastava.space/resume.pdf';
 
 /** No `method` filter: every method on this path is answered here, never by the SPA rewrite. */
@@ -59,16 +60,29 @@ export function createHandler({
         return failure(405, 'method not allowed', { Allow: 'GET, HEAD' });
       }
 
+      // For `cache: 'manual'` the query string is part of the cache key, so
+      // `/resume.pdf?<random>` would force a full upstream fetch per request.
+      // Send those visitors to the canonical, cacheable URL instead.
+      if (new URL(req.url).search !== '') {
+        return new Response(null, {
+          status: 301,
+          headers: { Location: '/resume.pdf', 'X-Content-Type-Options': 'nosniff' },
+        });
+      }
+
       // One deadline covers the headers and the body.
       const ctrl = new AbortController();
       const { signal } = ctrl;
       const timer = setTimeout(() => ctrl.abort(), deadlineMs);
       try {
-        // No visitor header is forwarded and the query string is ignored. The
+        // No visitor header is forwarded, and the URL has no query string by now. The
         // upstream is fetched with GET for HEAD too, so both apply the same checks.
         const upstream = await fetchImpl(UPSTREAM, { method: 'GET', redirect: 'manual', signal });
 
-        const type = (upstream.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
+        const type = (upstream.headers.get('content-type') ?? '')
+          .split(';')[0]
+          .trim()
+          .toLowerCase();
         if (upstream.status !== 200 || type !== 'application/pdf') {
           void upstream.body?.cancel().catch(() => {});
           return fail();
@@ -96,6 +110,11 @@ export function createHandler({
         for (const chunk of chunks) {
           bytes.set(chunk, offset);
           offset += chunk.byteLength;
+        }
+        // A body that closed early must never be cached as a 200.
+        const declared = upstream.headers.get('content-length');
+        if (declared !== null && /^\d+$/.test(declared.trim()) && Number(declared) !== total) {
+          return fail();
         }
         if (!PDF_MAGIC.every((b, i) => bytes[i] === b)) return fail();
 

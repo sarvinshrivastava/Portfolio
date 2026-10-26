@@ -51,7 +51,8 @@ async function fetchResults(
         if (!Array.isArray(body?.results)) {
           throw new Error(`snapshot: ${dataset} response has no results array`);
         }
-        if (body._stale === true) console.warn(`snapshot: ${dataset} was served stale by the cache`);
+        if (body._stale === true)
+          console.warn(`snapshot: ${dataset} was served stale by the cache`);
         return body.results;
       }
       // Only rate limits and server errors are worth retrying.
@@ -80,7 +81,15 @@ export async function fetchSnapshot({
   }
 
   const [about, projects, timeline, experience] = await Promise.all(
-    DATASETS.map(d => fetchResults(d, `${base}/api/database/${encodeURIComponent(ids[d])}`, fetchImpl, sleep, retries)),
+    DATASETS.map(d =>
+      fetchResults(
+        d,
+        `${base}/api/database/${encodeURIComponent(ids[d])}`,
+        fetchImpl,
+        sleep,
+        retries,
+      ),
+    ),
   );
 
   const snapshot: Snapshot = {

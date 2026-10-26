@@ -79,7 +79,9 @@ export function FallbackToast() {
 
   return (
     <>
-      <span role="status" aria-live="polite" className="sr-only">{visible ? message : ''}</span>
+      <span role="status" aria-live="polite" className="sr-only">
+        {visible ? message : ''}
+      </span>
       {visible && (
         <div
           className="fixed bottom-4 right-4 max-[480px]:left-4 z-50 flex items-start gap-3 bg-bg-secondary border border-border rounded-[var(--radius)] font-mono text-sm px-4 py-3"

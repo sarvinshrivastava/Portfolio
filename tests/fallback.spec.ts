@@ -6,7 +6,7 @@ import { snapshotBody } from './support/notionHarness';
  * Never touches the real notion-cache: every dataset request answers 429, the
  * build snapshot and /resume.pdf are served from fixtures. The dev server
  * (playwright.config.ts) requests the datasets at /api/database/<id>, the
- * snapshot at /data/snapshot.json and the probe as HEAD /resume.pdf.
+ * snapshot at /data/snapshot.json and the probe as GET /resume.pdf.
  */
 
 test.use({ viewport: { width: 1280, height: 800 } });
@@ -47,6 +47,12 @@ test('serves the snapshot as one set, announces it, and keeps the cv link', asyn
   // Client-side navigation keeps showing the same saved set (no live/saved mix).
   await page.locator('header nav ul a[href="/experience"]').click();
   await expect(page.locator('article').first()).toContainText('New Co');
+
+  // The About bio and the Timeline come from the same saved set.
+  await page.locator('header nav ul a[href="/my-journey"]').click();
+  await expect(page.locator('[role="button"][aria-expanded]')).toHaveCount(4);
+  await page.getByRole('link', { name: 'Sarvin Shrivastava — home' }).click();
+  await expect(page.locator('#about')).toContainText(TAG);
 
   await page.getByRole('button', { name: 'Dismiss' }).click();
   await expect(page.getByRole('button', { name: 'Dismiss' })).toHaveCount(0);

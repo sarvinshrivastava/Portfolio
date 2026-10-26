@@ -79,9 +79,9 @@ describe('fetchSnapshot', () => {
 
   it('does not retry a 404', async () => {
     const sleep = mkSleep();
-    await expect(run(routes({ idp: () => new Response('', { status: 404 }) }), sleep)).rejects.toThrow(
-      'snapshot: projects failed (404)',
-    );
+    await expect(
+      run(routes({ idp: () => new Response('', { status: 404 }) }), sleep),
+    ).rejects.toThrow('snapshot: projects failed (404)');
     expect(sleep).not.toHaveBeenCalled();
   });
 
@@ -101,6 +101,23 @@ describe('fetchSnapshot', () => {
 
   it('throws when About has an empty Bio', async () => {
     await expect(run(routes({ ida: () => ok(aboutPages('')) }))).rejects.toThrow(/about/);
+  });
+
+  it('percent-encodes the database id in the request URL', async () => {
+    const urls: string[] = [];
+    const fetchImpl = vi.fn(async (url: string | URL | Request) => {
+      urls.push(String(url));
+      return ok(String(url).includes('a%2Fb%3Fc') ? aboutPages() : projectPages);
+    }) as unknown as typeof fetch;
+    await fetchSnapshot({
+      base,
+      ids: { ...ids, about: 'a/b?c' },
+      fetchImpl,
+      sleep: mkSleep(),
+      retries: [],
+    }).catch(() => {});
+
+    expect(urls).toContain(`${base}/api/database/a%2Fb%3Fc`);
   });
 
   it('throws on a relative base', async () => {
