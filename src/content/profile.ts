@@ -12,7 +12,7 @@
 import type { SocialNetwork } from '../lib/analytics';
 import type { About } from '../types';
 
-/** Same-origin path: Netlify proxies it to notion-cache, which serves the daily-rendered PDF. */
+/** Same-origin path: an edge function gates it to notion-cache's daily-rendered PDF (PDF only). */
 export const RESUME_PATH = '/resume.pdf';
 
 export const PERSON = {

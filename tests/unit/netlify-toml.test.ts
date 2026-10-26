@@ -5,19 +5,13 @@ import { describe, expect, it } from 'vitest';
 
 const toml = readFileSync(resolve(__dirname, '../../netlify.toml'), 'utf8');
 
-describe('netlify.toml resume proxy', () => {
-  it('proxies /resume.pdf with status 200 and force, before the /* rule', () => {
-    const resume = toml.search(/^\s*from\s*=\s*"\/resume\.pdf"/m);
-    const spa = toml.search(/^\s*from\s*=\s*"\/\*"/m);
-    expect(resume).toBeGreaterThan(-1);
-    expect(spa).toBeGreaterThan(-1);
-    expect(resume).toBeLessThan(spa);
+describe('netlify.toml redirects', () => {
+  it('has no redirect for /resume.pdf: the edge function owns that path', () => {
+    expect(toml).not.toMatch(/^\s*from\s*=\s*"\/resume\.pdf"/m);
+  });
 
-    const block = toml.slice(resume, spa);
-    expect(block).toMatch(/^\s*status\s*=\s*200\s*$/m);
-    expect(block).toMatch(/^\s*force\s*=\s*true\s*$/m);
-    expect(block).toMatch(
-      /^\s*to\s*=\s*"https:\/\/notion-cache\.vps\.sarvinshrivastava\.space\/resume\.pdf"\s*$/m,
-    );
+  it('keeps the SPA rewrite as the last redirect', () => {
+    const froms = [...toml.matchAll(/^\s*from\s*=\s*"([^"]+)"/gm)].map(m => m[1]);
+    expect(froms.at(-1)).toBe('/*');
   });
 });

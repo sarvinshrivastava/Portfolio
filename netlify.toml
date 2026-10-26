@@ -78,14 +78,6 @@
     # bare origin, and https -> http gets nothing.
     Referrer-Policy = "strict-origin-when-cross-origin"
 
-# Proxy the resume PDF from notion-cache. Before the /* rule so the SPA rewrite
-# never shadows it; force = true because there is no file at this path in dist.
-[[redirects]]
-  from = "/resume.pdf"
-  to = "https://notion-cache.vps.sarvinshrivastava.space/resume.pdf"
-  status = 200
-  force = true
-
 [[redirects]]
   from = "/*"
   to = "/index.html"

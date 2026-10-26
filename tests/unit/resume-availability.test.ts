@@ -9,6 +9,21 @@ const fetchMock = vi.fn();
 const head = (status: number, contentType = 'application/pdf') =>
   new Response(null, { status, headers: { 'content-type': contentType } });
 
+/** A response whose body reads and cancels can be observed or made to fail. */
+function probeRes(
+  status: number,
+  contentType: string,
+  { read = async () => new ArrayBuffer(0), cancel = async () => {} } = {},
+) {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    headers: new Headers({ 'content-type': contentType }),
+    arrayBuffer: vi.fn(read),
+    body: { cancel: vi.fn(cancel) },
+  };
+}
+
 /**
  * The memo and last known value are module state, so each test gets a fresh
  * module graph. React, RTL and the router are imported after the reset too, so
@@ -32,12 +47,16 @@ afterEach(() => {
 });
 
 describe('resume availability', () => {
-  it('is true for a 200 application/pdf, probed with HEAD on /resume.pdf', async () => {
-    fetchMock.mockResolvedValue(head(200));
+  it('is true for a 200 application/pdf, probed with a GET that lets the body finish', async () => {
+    const res = probeRes(200, 'application/pdf');
+    fetchMock.mockResolvedValue(res);
     const { checkResume } = await fresh();
 
     expect(await checkResume()).toBe(true);
-    expect(fetchMock).toHaveBeenCalledWith('/resume.pdf', expect.objectContaining({ method: 'HEAD' }));
+    expect(fetchMock).toHaveBeenCalledWith('/resume.pdf', { signal: expect.any(AbortSignal) });
+    expect(fetchMock.mock.calls[0][1]).not.toHaveProperty('method');
+    expect(res.arrayBuffer).toHaveBeenCalledTimes(1);
+    expect(res.body.cancel).not.toHaveBeenCalled();
     expect(analytics.trackOnce).not.toHaveBeenCalled();
   });
 
@@ -52,14 +71,56 @@ describe('resume availability', () => {
     });
   });
 
-  it('is false for a 503 and reports resume_unavailable with 503', async () => {
-    fetchMock.mockResolvedValue(head(503, 'text/plain'));
+  it('is false for a 503, cancels the body and reports resume_unavailable with 503', async () => {
+    const res = probeRes(503, 'text/plain');
+    fetchMock.mockResolvedValue(res);
     const { checkResume } = await fresh();
 
     expect(await checkResume()).toBe(false);
+    expect(res.body.cancel).toHaveBeenCalledTimes(1);
+    expect(res.arrayBuffer).not.toHaveBeenCalled();
     expect(analytics.trackOnce).toHaveBeenCalledWith('resume_unavailable', 'resume_unavailable', {
       status: 503,
     });
+  });
+
+  it('stays true, silent and unhandled-rejection free when the body read rejects', async () => {
+    const spy = vi.fn();
+    process.on('unhandledRejection', spy);
+    try {
+      const res = probeRes(200, 'application/pdf', {
+        read: () => Promise.reject(new Error('read failed')),
+      });
+      fetchMock.mockResolvedValue(res);
+      const { checkResume } = await fresh();
+
+      expect(await checkResume()).toBe(true);
+      await new Promise(r => setTimeout(r, 20));
+      expect(analytics.trackOnce).not.toHaveBeenCalled();
+      expect(spy).not.toHaveBeenCalled();
+    } finally {
+      process.off('unhandledRejection', spy);
+    }
+  });
+
+  it('keeps status 503 (not -1) when cancelling the failed body rejects', async () => {
+    const spy = vi.fn();
+    process.on('unhandledRejection', spy);
+    try {
+      fetchMock.mockResolvedValue(
+        probeRes(503, 'text/plain', { cancel: () => Promise.reject(new Error('cancel failed')) }),
+      );
+      const { checkResume } = await fresh();
+
+      expect(await checkResume()).toBe(false);
+      await new Promise(r => setTimeout(r, 20));
+      expect(analytics.trackOnce).toHaveBeenCalledWith('resume_unavailable', 'resume_unavailable', {
+        status: 503,
+      });
+      expect(spy).not.toHaveBeenCalled();
+    } finally {
+      process.off('unhandledRejection', spy);
+    }
   });
 
   it('reports -1 for a network error', async () => {

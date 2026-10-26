@@ -4,26 +4,32 @@ import { trackOnce } from './analytics';
 
 /**
  * The resume button shows only while `/resume.pdf` is actually served as a PDF.
- * Netlify proxies the path to notion-cache; if that is down (or the SPA rewrite
- * answers with HTML), a visible button would lead to a dead page.
+ * An edge function gates the path to notion-cache (PDF only); if that is down
+ * (or the SPA rewrite answers with HTML), a visible button would lead to a dead
+ * page. The probe is a GET, not a HEAD, so the edge cache answers it exactly as
+ * it answers a click, including a cached copy during a VPS outage. On success
+ * the download is left to finish so the browser's HTTP-cache entry completes
+ * and later loads revalidate with a 304.
  */
 
-const PROBE_TIMEOUT_MS = 5000;
+export const PROBE_TIMEOUT_MS = 5000;
 
 let known = true;
 let probe: Promise<boolean> | null = null;
 
-/** One HEAD request per page load. */
+/** One GET per page load. */
 export function checkResume(): Promise<boolean> {
   probe ??= (async () => {
     let status: number;
+    let res: Response | undefined;
     try {
-      // A hung proxy would otherwise leave a dead link on screen.
+      // A hung gate would otherwise leave a dead link on screen.
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), PROBE_TIMEOUT_MS);
       try {
-        const res = await fetch(RESUME_PATH, { method: 'HEAD', signal: ctrl.signal });
+        res = await fetch(RESUME_PATH, { signal: ctrl.signal });
         if (res.ok && (res.headers.get('content-type') ?? '').includes('application/pdf')) {
+          void res.arrayBuffer().catch(() => {});
           return true;
         }
         status = res.status;
@@ -33,6 +39,8 @@ export function checkResume(): Promise<boolean> {
     } catch {
       status = -1;
     }
+    // A body that fails to read or cancel never changes the result.
+    void res?.body?.cancel().catch(() => {});
     known = false;
     trackOnce('resume_unavailable', 'resume_unavailable', { status });
     return false;
